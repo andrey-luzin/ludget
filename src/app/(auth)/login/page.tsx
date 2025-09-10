@@ -64,12 +64,11 @@ export default function LoginPage() {
           {error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : null}
-          <Button type="submit" disabled={pending}>
-            {pending ? "Вход…" : "Войти"}
+          <Button type="submit" loading={pending}>
+            Войти
           </Button>
         </form>
       </div>
     </div>
   );
 }
-

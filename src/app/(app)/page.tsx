@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "@/components/ui/calendar"
-import Protected from "@/components/auth/protected"
 import { useEffect } from "react"
 
 export default function Home() {
@@ -20,8 +19,7 @@ export default function Home() {
   if (!mounted) return null;
 
   return (
-    <Protected>
-      <div className="min-h-screen w-full py-12 px-6 sm:px-10">
+      <div className="py-2">
         <div className="mx-auto max-w-3xl">
         <h1 className="text-2xl font-semibold tracking-tight">shadcn/ui demo</h1>
         <p className="text-muted-foreground mt-1">Button, Input, Checkbox, Calendar</p>
@@ -92,6 +90,5 @@ export default function Home() {
         </div>
         </div>
       </div>
-    </Protected>
   )
 }
