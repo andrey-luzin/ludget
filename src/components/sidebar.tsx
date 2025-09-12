@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 
 const navItems = [
-  { href: "/", label: "Бюджет", emoji: "💰" },
-  { href: "/transactions", label: "Транзакции", emoji: "🧾" },
+  { href: "/", label: "Транзакции", emoji: "🧾" },
 ];
 
 export default function Sidebar() {
@@ -21,10 +20,9 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="h-screen sticky top-0 w-60 border-r bg-sidebar text-sidebar-foreground px-3 py-4">
+    <aside className="h-screen sticky top-0 w-60 border-r bg-sidebar text-sidebar-foreground px-3 py-4 flex flex-col">
       <div className="px-2 pb-4">
-        <div className="text-lg font-semibold tracking-tight">ludget</div>
-        <div className="text-xs text-muted-foreground">ведение бюджета</div>
+        <div className="text-lg font-semibold tracking-tight">Ludget</div>
       </div>
       <nav className="flex flex-col gap-1">
         {navItems.map((item) => {
@@ -45,6 +43,33 @@ export default function Sidebar() {
             </Link>
           );
         })}
+        <div className="px-2 pt-3 pb-1 text-xs font-medium text-muted-foreground">Справочники</div>
+        <div className="ml-1.5 flex flex-col gap-1">
+          <Link
+            href="/directories/accounts"
+            className={
+              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors " +
+              (pathname === "/directories/accounts"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "hover:bg-sidebar-accent/60")
+            }
+          >
+            <span aria-hidden>🏦</span>
+            <span>Счета</span>
+          </Link>
+          <Link
+            href="/directories/currencies"
+            className={
+              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors " +
+              (pathname === "/directories/currencies"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "hover:bg-sidebar-accent/60")
+            }
+          >
+            <span aria-hidden>💱</span>
+            <span>Валюты</span>
+          </Link>
+        </div>
       </nav>
       <div className="mt-auto pt-4">
         <Button variant="outline" className="w-full" onClick={handleLogout}>
@@ -54,4 +79,3 @@ export default function Sidebar() {
     </aside>
   );
 }
-
