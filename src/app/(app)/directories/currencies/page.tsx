@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog, InfoDialog } from "@/components/ui/confirm-dialog";
 import { db } from "@/lib/firebase";
+import { Collections, SubCollections } from "@/types/collections";
 import {
   addDoc,
   collection,
@@ -31,7 +32,7 @@ export default function CurrenciesPage() {
   const [blocked, setBlocked] = useState<{ name: string; count: number } | null>(null);
 
   useEffect(() => {
-    const q = query(collection(db, "currencies"), orderBy("name"));
+    const q = query(collection(db, Collections.Currencies), orderBy("name"));
     const unsub = onSnapshot(q, (snap) => {
       setCurrencies(snap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name })));
     });
@@ -42,7 +43,7 @@ export default function CurrenciesPage() {
     if (!newName.trim()) return;
     setPendingAdd(true);
     try {
-      await addDoc(collection(db, "currencies"), {
+      await addDoc(collection(db, Collections.Currencies), {
         name: newName.trim(),
         createdAt: serverTimestamp(),
       });
@@ -55,13 +56,13 @@ export default function CurrenciesPage() {
   async function saveEdit(id: string) {
     const name = editing[id]?.trim();
     if (!name) return;
-    await updateDoc(doc(db, "currencies", id), { name });
+    await updateDoc(doc(db, Collections.Currencies, id), { name });
     setEditing((s) => ({ ...s, [id]: "" }));
   }
 
   async function deleteCurrency(id: string) {
     try {
-      const q = query(collectionGroup(db, "balances"), where("currencyId", "==", id));
+      const q = query(collectionGroup(db, SubCollections.Balances), where("currencyId", "==", id));
       const usedSnap = await getDocs(q);
       console.log('usedSnap', q);
       
@@ -71,7 +72,7 @@ export default function CurrenciesPage() {
         setBlocked({ name, count });
         return;
       }
-      await deleteDoc(doc(db, "currencies", id));
+      await deleteDoc(doc(db, Collections.Currencies, id));
     } catch (e) {
       setBlocked({ name: currencies.find((c) => c.id === id)?.name || "(неизвестная)", count: -1 });
     }
@@ -82,7 +83,7 @@ export default function CurrenciesPage() {
       console.log('c', c);
       
       // Check if this currency is used in any account balances
-      const q = query(collectionGroup(db, "balances"), where("currencyId", "==", c.id));
+      const q = query(collectionGroup(db, SubCollections.Balances), where("currencyId", "==", c.id));
       
       const usedSnap = await getDocs(q);
       console.log('usedSnap', usedSnap);

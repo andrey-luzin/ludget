@@ -19,6 +19,7 @@ import {
   updateDoc,
   getDocs,
 } from "firebase/firestore";
+import { Collections, SubCollections } from "@/types/collections";
 
 type Currency = { id: string; name: string };
 type Balance = { id: string; currencyId: string; amount: number };
@@ -33,14 +34,14 @@ export default function AccountsPage() {
   const [pendingAdd, setPendingAdd] = useState(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, "accounts"), orderBy("name")), (snap) => {
+    const unsub = onSnapshot(query(collection(db, Collections.Accounts), orderBy("name")), (snap) => {
       setAccounts(snap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name })));
     });
     return () => unsub();
   }, []);
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, "currencies"), orderBy("name")), (snap) => {
+    const unsub = onSnapshot(query(collection(db, Collections.Currencies), orderBy("name")), (snap) => {
       setCurrencies(snap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name })));
     });
     return () => unsub();
@@ -50,7 +51,7 @@ export default function AccountsPage() {
     if (!newName.trim()) return;
     setPendingAdd(true);
     try {
-      await addDoc(collection(db, "accounts"), { name: newName.trim(), createdAt: serverTimestamp() });
+      await addDoc(collection(db, Collections.Accounts), { name: newName.trim(), createdAt: serverTimestamp() });
       setNewName("");
     } finally {
       setPendingAdd(false);
@@ -60,16 +61,16 @@ export default function AccountsPage() {
   async function saveEdit(id: string) {
     const name = editing[id]?.trim();
     if (!name) return;
-    await updateDoc(doc(db, "accounts", id), { name });
+    await updateDoc(doc(db, Collections.Accounts, id), { name });
     setEditing((s) => ({ ...s, [id]: "" }));
   }
 
   async function deleteAccount(acc: Account) {
     // Delete balances subcollection docs first
-    const balancesCol = collection(db, "accounts", acc.id, "balances");
+    const balancesCol = collection(db, Collections.Accounts, acc.id, SubCollections.Balances);
     const snap = await getDocs(balancesCol);
     await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
-    await deleteDoc(doc(db, "accounts", acc.id));
+    await deleteDoc(doc(db, Collections.Accounts, acc.id));
   }
 
   return (
@@ -133,7 +134,7 @@ function AccountItem({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "accounts", account.id, "balances"), (snap) => {
+    const unsub = onSnapshot(collection(db, Collections.Accounts, account.id, SubCollections.Balances), (snap) => {
       const list = snap.docs.map((d) => {
         const data = d.data() as any;
         return { id: d.id, currencyId: String(data.currencyId), amount: Number(data.amount) } as Balance;
@@ -201,13 +202,13 @@ function AccountItem({
     try {
       const deletes = drafts.filter((d) => d.deleted && !d.isNew);
       await Promise.all(
-        deletes.map((d) => deleteDoc(doc(db, "accounts", account.id, "balances", d.id)))
+        deletes.map((d) => deleteDoc(doc(db, Collections.Accounts, account.id, SubCollections.Balances, d.id)))
       );
       const updates = drafts.filter((d) => !d.isNew && !d.deleted);
       await Promise.all(
         updates.map((d) => {
           const amount = Number(d.amount || 0);
-          return updateDoc(doc(db, "accounts", account.id, "balances", d.id), {
+          return updateDoc(doc(db, Collections.Accounts, account.id, SubCollections.Balances, d.id), {
             currencyId: d.currencyId,
             amount,
           } as any);
@@ -216,7 +217,7 @@ function AccountItem({
       const creates = drafts.filter((d) => d.isNew && !d.deleted);
       await Promise.all(
         creates.map((d) =>
-          addDoc(collection(db, "accounts", account.id, "balances"), {
+          addDoc(collection(db, Collections.Accounts, account.id, SubCollections.Balances), {
             currencyId: d.currencyId,
             amount: Number(d.amount || 0),
             createdAt: serverTimestamp(),
