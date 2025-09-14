@@ -149,16 +149,27 @@ function AccountItem({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, Collections.Accounts, account.id, SubCollections.Balances), (snap) => {
-      const list = snap.docs.map((d) => {
-        const data = d.data() as any;
-        return { id: d.id, currencyId: String(data.currencyId), amount: Number(data.amount) } as Balance;
-      });
-      setServerBalances(list);
-      setDrafts(list.map((b) => ({ id: b.id, currencyId: b.currencyId, amount: String(b.amount) })));
-    });
+    if (!ownerUid) return;
+    const q = query(
+      collection(db, Collections.Accounts, account.id, SubCollections.Balances),
+      where("ownerUid", "==", ownerUid)
+    );
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const list = snap.docs.map((d) => {
+          const data = d.data() as any;
+          return { id: d.id, currencyId: String(data.currencyId), amount: Number(data.amount) } as Balance;
+        });
+        setServerBalances(list);
+        setDrafts(list.map((b) => ({ id: b.id, currencyId: b.currencyId, amount: String(b.amount) })));
+      },
+      (err) => {
+        console.warn("balances listener error", err);
+      }
+    );
     return () => unsub();
-  }, [account.id]);
+  }, [account.id, ownerUid]);
 
   async function addBalance() {
     const currencyId = adding.currencyId;

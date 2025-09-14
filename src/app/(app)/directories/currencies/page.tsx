@@ -137,7 +137,7 @@ export default function CurrenciesPage() {
         {currencies.map((c) => {
           const isEditing = Boolean(editing[c.id]);
           return (
-            <div key={c.id} className="flex items-center gap-2 border rounded-md p-2">
+            <div key={c.id} className="flex items-center gap-2 border rounded-md p-2 pl-4">
               {isEditing ? (
                 <Input
                   value={editing[c.id]}
