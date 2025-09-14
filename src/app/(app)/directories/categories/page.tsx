@@ -25,7 +25,9 @@ export default function CategoriesPage() {
   const [blocked, setBlocked] = useState<{ name: string; count: number } | null>(null);
 
   useEffect(() => {
-    if (!ownerUid) return;
+    if (!ownerUid) {
+      return;
+    }
     const q = query(collection(db, Collections.Categories), where("ownerUid", "==", ownerUid), orderBy("name"));
     const unsub = onSnapshot(q, (snap) => {
       setCategories(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Category[]);
@@ -73,6 +75,17 @@ export default function CategoriesPage() {
     await deleteDoc(doc(db, Collections.Categories, id));
   }
 
+  const handleNameChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    setName(e.target.value);
+    if (error) {
+      setError(null);
+    }
+  };
+
+  const handleParentChange = (v: string) => {
+    setParentId(v);
+  };
+
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">Категории</h1>
@@ -81,18 +94,11 @@ export default function CategoriesPage() {
       <div className="mt-6 grid gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-end sm:gap-3">
         <div className="grid gap-1">
           <label className="text-sm font-medium">Название</label>
-          <Input
-            placeholder="Название категории"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (error) setError(null);
-            }}
-          />
+          <Input placeholder="Название категории" value={name} onChange={handleNameChange} />
         </div>
         <div className="grid gap-1">
           <label className="text-sm font-medium">Вложенность</label>
-          <Select value={parentId} onValueChange={setParentId}>
+          <Select value={parentId} onValueChange={handleParentChange}>
             <SelectTrigger className="w-56">
               <SelectValue />
             </SelectTrigger>

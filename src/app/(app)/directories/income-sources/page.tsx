@@ -25,7 +25,9 @@ export default function IncomeSourcesPage() {
   const [blocked, setBlocked] = useState<{ name: string; count: number } | null>(null);
 
   useEffect(() => {
-    if (!ownerUid) return;
+    if (!ownerUid) {
+      return;
+    }
     const q = query(collection(db, Collections.IncomeSources), where("ownerUid", "==", ownerUid), orderBy("name"));
     const unsub = onSnapshot(q, (snap) => {
       setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Source[]);
@@ -56,6 +58,29 @@ export default function IncomeSourcesPage() {
 
   const roots = useMemo(() => items.filter((c) => !c.parentId), [items]);
 
+  function hasChildren(id: string) {
+    return items.some((c) => c.parentId === id);
+  }
+
+  function askDelete(s: Source) {
+    if (hasChildren(s.id)) {
+      const count = items.filter((x) => x.parentId === s.id).length;
+      setBlocked({ name: s.name, count });
+      return;
+    }
+    setConfirmDel(s);
+  }
+
+  const handleNameChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    setName(e.target.value);
+    if (error) {
+      setError(null);
+    }
+  };
+  const handleParentChange = (v: string) => {
+    setParentId(v);
+  };
+
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">Источники доходов</h1>
@@ -64,18 +89,11 @@ export default function IncomeSourcesPage() {
       <div className="mt-6 grid gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-end sm:gap-3">
         <div className="grid gap-1">
           <label className="text-sm font-medium">Название</label>
-          <Input
-            placeholder="Название источника"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (error) setError(null);
-            }}
-          />
+          <Input placeholder="Название источника" value={name} onChange={handleNameChange} />
         </div>
         <div className="grid gap-1">
           <label className="text-sm font-medium">Вложенность</label>
-          <Select value={parentId} onValueChange={setParentId}>
+          <Select value={parentId} onValueChange={handleParentChange}>
             <SelectTrigger className="w-56">
               <SelectValue />
             </SelectTrigger>
@@ -96,19 +114,6 @@ export default function IncomeSourcesPage() {
       <div className="mt-6 grid gap-2">
         {roots.map((r) => {
           const currentItems = items.filter((c) => c.parentId === r.id);
-
-          function hasChildren(id: string) {
-            return items.some((c) => c.parentId === id);
-          }
-
-          function askDelete(s: Source) {
-            if (hasChildren(s.id)) {
-              const count = items.filter((x) => x.parentId === s.id).length;
-              setBlocked({ name: s.name, count });
-              return;
-            }
-            setConfirmDel(s);
-          }
 
           return (
             <div key={r.id} className="border rounded-md p-3">
