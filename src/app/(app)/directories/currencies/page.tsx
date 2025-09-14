@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog, InfoDialog } from "@/components/ui/confirm-dialog";
+import { Alert } from "@/components/ui/alert";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
 import {
   addDoc,
@@ -24,30 +26,42 @@ import {
 type Currency = { id: string; name: string };
 
 export default function CurrenciesPage() {
+  const { ownerUid } = useAuth();
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [newName, setNewName] = useState("");
   const [editing, setEditing] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<{ id: string; name: string } | null>(null);
   const [pendingAdd, setPendingAdd] = useState(false);
   const [blocked, setBlocked] = useState<{ name: string; count: number } | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
 
   useEffect(() => {
-    const q = query(collection(db, Collections.Currencies), orderBy("name"));
+    if (!ownerUid) return;
+    const q = query(
+      collection(db, Collections.Currencies),
+      where("ownerUid", "==", ownerUid),
+      orderBy("name")
+    );
     const unsub = onSnapshot(q, (snap) => {
       setCurrencies(snap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name })));
     });
     return () => unsub();
-  }, []);
+  }, [ownerUid]);
 
   async function addCurrency() {
-    if (!newName.trim()) return;
+    if (!newName.trim()) {
+      setAddError("Пожалуйста, введите название валюты.");
+      return;
+    }
     setPendingAdd(true);
     try {
       await addDoc(collection(db, Collections.Currencies), {
         name: newName.trim(),
         createdAt: serverTimestamp(),
+        ownerUid,
       });
       setNewName("");
+      setAddError(null);
     } finally {
       setPendingAdd(false);
     }
@@ -62,10 +76,12 @@ export default function CurrenciesPage() {
 
   async function deleteCurrency(id: string) {
     try {
-      const q = query(collectionGroup(db, SubCollections.Balances), where("currencyId", "==", id));
+      const q = query(
+        collectionGroup(db, SubCollections.Balances),
+        where("ownerUid", "==", ownerUid ?? "__none__"),
+        where("currencyId", "==", id)
+      );
       const usedSnap = await getDocs(q);
-      console.log('usedSnap', q);
-      
       const count = usedSnap.size;
       if (count > 0) {
         const name = currencies.find((c) => c.id === id)?.name || "(неизвестная)";
@@ -80,13 +96,13 @@ export default function CurrenciesPage() {
 
   async function askDeleteCurrency(c: Currency) {
     try {
-      console.log('c', c);
-      
-      // Check if this currency is used in any account balances
-      const q = query(collectionGroup(db, SubCollections.Balances), where("currencyId", "==", c.id));
-      
+      // Check if this currency is used in any account balances of current user
+      const q = query(
+        collectionGroup(db, SubCollections.Balances),
+        where("ownerUid", "==", ownerUid ?? "__none__"),
+        where("currencyId", "==", c.id)
+      );
       const usedSnap = await getDocs(q);
-      console.log('usedSnap', usedSnap);
       
       if (usedSnap.size > 0) {
         setBlocked({ name: c.name, count: usedSnap.size });
@@ -108,10 +124,14 @@ export default function CurrenciesPage() {
         <Input
           placeholder="Название валюты"
           value={newName}
-          onChange={(e) => setNewName(e.target.value)}
+          onChange={(e) => {
+            setNewName(e.target.value);
+            if (addError) setAddError(null);
+          }}
         />
         <Button onClick={addCurrency} loading={pendingAdd}>Добавить</Button>
       </div>
+      {addError ? <Alert className="mt-2">{addError}</Alert> : null}
 
       <div className="mt-6 grid gap-2">
         {currencies.map((c) => {

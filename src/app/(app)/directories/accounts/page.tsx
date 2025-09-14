@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/contexts/auth-context";
 import {
   addDoc,
   collection,
@@ -18,6 +19,7 @@ import {
   serverTimestamp,
   updateDoc,
   getDocs,
+  where,
 } from "firebase/firestore";
 import { Collections, SubCollections } from "@/types/collections";
 
@@ -26,33 +28,41 @@ type Balance = { id: string; currencyId: string; amount: number };
 type Account = { id: string; name: string };
 
 export default function AccountsPage() {
+  const { ownerUid } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [newName, setNewName] = useState("");
+  const [addAccountError, setAddAccountError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Record<string, string>>({});
   const [confirmAccount, setConfirmAccount] = useState<Account | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [pendingAdd, setPendingAdd] = useState(false);
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, Collections.Accounts), orderBy("name")), (snap) => {
+    if (!ownerUid) return;
+    const unsub = onSnapshot(query(collection(db, Collections.Accounts), where("ownerUid", "==", ownerUid), orderBy("name")), (snap) => {
       setAccounts(snap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name })));
     });
     return () => unsub();
-  }, []);
+  }, [ownerUid]);
 
   useEffect(() => {
-    const unsub = onSnapshot(query(collection(db, Collections.Currencies), orderBy("name")), (snap) => {
+    if (!ownerUid) return;
+    const unsub = onSnapshot(query(collection(db, Collections.Currencies), where("ownerUid", "==", ownerUid), orderBy("name")), (snap) => {
       setCurrencies(snap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name })));
     });
     return () => unsub();
-  }, []);
+  }, [ownerUid]);
 
   async function addAccount() {
-    if (!newName.trim()) return;
+    if (!newName.trim()) {
+      setAddAccountError("Пожалуйста, введите название счета.");
+      return;
+    }
     setPendingAdd(true);
     try {
-      await addDoc(collection(db, Collections.Accounts), { name: newName.trim(), createdAt: serverTimestamp() });
+      await addDoc(collection(db, Collections.Accounts), { name: newName.trim(), createdAt: serverTimestamp(), ownerUid });
       setNewName("");
+      setAddAccountError(null);
     } finally {
       setPendingAdd(false);
     }
@@ -82,10 +92,14 @@ export default function AccountsPage() {
         <Input
           placeholder="Название счета"
           value={newName}
-          onChange={(e) => setNewName(e.target.value)}
+          onChange={(e) => {
+            setNewName(e.target.value);
+            if (addAccountError) setAddAccountError(null);
+          }}
         />
         <Button onClick={addAccount} loading={pendingAdd}>Добавить</Button>
       </div>
+      {addAccountError ? <Alert className="mt-2">{addAccountError}</Alert> : null}
 
       <div className="mt-6 grid gap-3">
         {accounts.map((acc) => (
@@ -127,6 +141,7 @@ function AccountItem({
   onSave: () => void;
   onAskDelete: () => void;
 }) {
+  const { ownerUid } = useAuth();
   const [serverBalances, setServerBalances] = useState<Balance[]>([]);
   const [drafts, setDrafts] = useState<{ id: string; currencyId: string; amount: string; isNew?: boolean; deleted?: boolean }[]>([]);
   const [adding, setAdding] = useState<{ currencyId: string; amount: string }>({ currencyId: "", amount: "0" });
@@ -221,6 +236,7 @@ function AccountItem({
             currencyId: d.currencyId,
             amount: Number(d.amount || 0),
             createdAt: serverTimestamp(),
+            ownerUid,
           })
         )
       );
