@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 
 const navItems = [
-  { href: "/", label: "Транзакции", emoji: "🧾" },
+  { href: "/transactions", label: "Транзакции", emoji: "🧾" },
 ];
 
 export default function Sidebar() {
@@ -68,6 +68,30 @@ export default function Sidebar() {
           >
             <span aria-hidden>💱</span>
             <span>Валюты</span>
+          </Link>
+          <Link
+            href="/directories/categories"
+            className={
+              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors " +
+              (pathname === "/directories/categories"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "hover:bg-sidebar-accent/60")
+            }
+          >
+            <span aria-hidden>🏷️</span>
+            <span>Категории</span>
+          </Link>
+          <Link
+            href="/directories/income-sources"
+            className={
+              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors " +
+              (pathname === "/directories/income-sources"
+                ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                : "hover:bg-sidebar-accent/60")
+            }
+          >
+            <span aria-hidden>💼</span>
+            <span>Источники</span>
           </Link>
         </div>
       </nav>
