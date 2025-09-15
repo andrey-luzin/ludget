@@ -216,6 +216,35 @@ function AccountItem({
     setAddError(null);
   }
 
+  // Immediate create in Firestore (used by outside add-currency block)
+  async function addBalanceImmediate(): Promise<boolean> {
+    const currencyId = adding.currencyId;
+    const amount = Number(adding.amount || 0);
+    if (!currencyId) {
+      setAddError("Пожалуйста, выберите валюту перед добавлением.");
+      return false;
+    }
+    // Prevent duplicates
+    if (serverBalances.some((b) => b.currencyId === currencyId)) {
+      setAddError("Эта валюта уже добавлена в счет.");
+      return false;
+    }
+    try {
+      await addDoc(collection(db, Collections.Accounts, account.id, SubCollections.Balances), {
+        currencyId,
+        amount,
+        createdAt: serverTimestamp(),
+        ownerUid,
+      } as any);
+      setAdding({ currencyId: "", amount: "0" });
+      setAddError(null);
+      return true;
+    } catch (e) {
+      setAddError("Не удалось добавить валюту. Попробуйте ещё раз.");
+      return false;
+    }
+  }
+
   function updateDraft(id: string, patch: Partial<{ currencyId: string; amount: string }>) {
     setDrafts((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)));
   }
@@ -302,7 +331,7 @@ function AccountItem({
           {serverBalances.length === 0 ? (
             <span>Валюты не добавлены</span>
           ) : (
-            <div className="flex flex-wrap gap-x-3 gap-y-1">
+            <div className="flex flex-col gap-y-3">
               {serverBalances.map((b) => {
                 const currency = currencyLabel(b.currencyId);
 
@@ -462,7 +491,7 @@ function AccountItem({
                 onChange={(e) => setAdding((s) => ({ ...s, amount: e.target.value }))}
               />
             </div>
-            <Button className="self-end" onClick={async () => { await addBalance(); setShowAddForm(false); }}>
+            <Button className="self-end" onClick={async () => { const ok = await addBalanceImmediate(); if (ok) setShowAddForm(false); }}>
               Добавить
             </Button>
             <Button className="self-end" variant="ghost" onClick={() => setShowAddForm(false)}>
