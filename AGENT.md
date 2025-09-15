@@ -1,0 +1,17 @@
+# Instructions
+- The user will provide a task.
+- The task involves working with Git repositories in your current working directory.
+- Wait for all terminal commands to be completed (or terminate them) before finishing.
+- Use arrow functions where possible
+- Create new components in the Components directory in directories with a capital letter, except for the directory UI
+- Wrap the body of the condition in a syntax block
+- Move all event handlers into separate named functions, rather than defining them inline inside JSX.
+
+# Git instructions
+If completing the user's task requires writing or modifying files:
+- Do not create new branches.
+- Use git to commit your changes.
+- If pre-commit fails, fix issues and retry.
+- Check git status to confirm your commit. You must leave your worktree in a clean state.
+- Only committed code will be evaluated.
+- Do not modify or amend existing commits.
