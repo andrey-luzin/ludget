@@ -5,9 +5,12 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
 import { collection, deleteDoc, doc, onSnapshot, orderBy, query, where } from "firebase/firestore";
-import { formatISO, parseISO, format } from "date-fns";
+import { formatISO, parseISO, format, startOfDay, endOfDay, startOfMonth } from "date-fns";
+import { subDays } from "date-fns/subDays";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 type TxType = "expense" | "income" | "transfer" | "exchange";
 
@@ -37,6 +40,7 @@ export function TransactionsList({
   const [items, setItems] = useState<Tx[]>([]);
   const ALL = "__all__";
   const [accountFilter, setAccountFilter] = useState<string>(ALL);
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
   const curName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
@@ -60,13 +64,26 @@ export function TransactionsList({
   }, [ownerUid, type]);
 
   const filtered = useMemo(() => {
-    if (accountFilter === ALL) {
-      return items;
+    let arr = items;
+    // Account filter
+    if (accountFilter !== ALL) {
+      arr = arr.filter(
+        (it) => it.accountId === accountFilter || it.fromAccountId === accountFilter || it.toAccountId === accountFilter
+      );
     }
-    return items.filter(
-      (it) => it.accountId === accountFilter || it.fromAccountId === accountFilter || it.toAccountId === accountFilter
-    );
-  }, [items, accountFilter]);
+    // Date range filter
+    if (dateRange?.from || dateRange?.to) {
+      const from = dateRange.from ? startOfDay(dateRange.from) : undefined;
+      const to = dateRange.to ? endOfDay(dateRange.to) : undefined;
+      arr = arr.filter((it) => {
+        const d: Date = it.date?.toDate ? it.date.toDate() : new Date(it.date);
+        if (from && d < from) return false;
+        if (to && d > to) return false;
+        return true;
+      });
+    }
+    return arr;
+  }, [items, accountFilter, dateRange]);
 
   const grouped = useMemo(() => {
     const byDay = new Map<string, Tx[]>();
@@ -88,7 +105,7 @@ export function TransactionsList({
 
   return (
     <div className="mt-6">
-      <div className="mb-2 flex items-end gap-2">
+      <div className="mb-2 flex flex-wrap items-end gap-2">
         <div className="grid gap-1">
           <label className="text-sm font-medium">Фильтр по счету</label>
           <Select value={accountFilter} onValueChange={setAccountFilter}>
@@ -100,6 +117,11 @@ export function TransactionsList({
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="grid gap-1">
+          <label className="text-sm font-medium">Период</label>
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
         </div>
       </div>
 
@@ -157,5 +179,89 @@ export function TransactionsList({
         ))}
       </div>
     </div>
+  );
+}
+
+function DateRangePicker({
+  value,
+  onChange,
+}: {
+  value: { from?: Date; to?: Date };
+  onChange: (v: { from?: Date; to?: Date }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [temp, setTemp] = useState<{ from?: Date; to?: Date }>(value || {});
+
+  // Initialize temp when opening
+  useEffect(() => {
+    if (open) setTemp(value || {});
+  }, [open]);
+
+  const label = useMemo(() => {
+    const { from, to } = value || {};
+    if (from && to) {
+      const sameDay = startOfDay(from).getTime() === startOfDay(to).getTime();
+      if (sameDay) return format(from, "dd.MM.yyyy");
+      return `${format(from, "dd.MM.yyyy")} — ${format(to, "dd.MM.yyyy")}`;
+    }
+    if (from && !to) return `${format(from, "dd.MM.yyyy")} — …`;
+    if (!from && to) return `… — ${format(to, "dd.MM.yyyy")}`;
+    return "Все даты";
+  }, [value]);
+
+  function setPreset(preset: "day" | "weekSliding" | "monthSliding" | "yearSliding" | "sinceMonthStart") {
+    const now = new Date();
+    if (preset === "day") {
+      const d = new Date();
+      setTemp({ from: d, to: d });
+    } else if (preset === "weekSliding") {
+      setTemp({ from: startOfDay(subDays(now, 6)), to: now });
+    } else if (preset === "monthSliding") {
+      setTemp({ from: startOfDay(subDays(now, 29)), to: now });
+    } else if (preset === "yearSliding") {
+      setTemp({ from: startOfDay(subDays(now, 364)), to: now });
+    } else if (preset === "sinceMonthStart") {
+      setTemp({ from: startOfMonth(now), to: now });
+    }
+  }
+
+  function clear() {
+    setTemp({});
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="min-w-56 justify-start">
+          {label}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="p-3">
+        <div className="flex flex-col md:flex-row gap-3">
+          <Calendar
+            mode="range"
+            selected={{ from: temp.from, to: temp.to }}
+            onSelect={(range: any) => setTemp(range || {})}
+            numberOfMonths={2}
+            defaultMonth={temp.from ?? value.from ?? new Date()}
+            className="rounded-md"
+          />
+          <div className="w-48 md:w-56 grid gap-2">
+            <div className="text-sm font-medium">Быстрый выбор</div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="secondary" onClick={() => setPreset("day")}>За день</Button>
+              <Button variant="secondary" onClick={() => setPreset("weekSliding")}>За неделю</Button>
+              <Button variant="secondary" onClick={() => setPreset("monthSliding")}>За месяц</Button>
+              <Button variant="secondary" onClick={() => setPreset("yearSliding")}>За год</Button>
+              <Button variant="secondary" onClick={() => setPreset("sinceMonthStart")} className="col-span-2">С начала месяца</Button>
+            </div>
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <Button variant="ghost" onClick={clear}>Сбросить</Button>
+              <Button onClick={() => { onChange(temp || {}); setOpen(false); }}>Готово</Button>
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 
 const navItems = [
-  { href: "/transactions", label: "Транзакции", emoji: "🧾" },
+  { href: "/", label: "Транзакции", emoji: "🧾" },
 ];
 
 export default function Sidebar() {

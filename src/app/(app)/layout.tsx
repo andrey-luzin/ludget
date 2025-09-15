@@ -1,4 +1,9 @@
 import Sidebar from "@/components/sidebar";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Транзакции — Ludget",
+};
 
 export default function AppLayout({
   children,
@@ -10,4 +15,3 @@ export default function AppLayout({
     </div>
   );
 }
-
