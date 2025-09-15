@@ -12,7 +12,7 @@ import { TransferForm } from "@/components/transactions/transfer-form";
 import { ExchangeForm } from "@/components/transactions/exchange-form";
 import { TransactionsList } from "@/components/transactions/transactions-list";
 
-type Account = { id: string; name: string };
+type Account = { id: string; name: string; color?: string };
 type Currency = { id: string; name: string };
 type Category = { id: string; name: string; parentId?: string | null };
 type Source = { id: string; name: string; parentId?: string | null };
@@ -34,7 +34,12 @@ export default function TransactionsPage() {
     }
     const unsubAccounts = onSnapshot(
       query(collection(db, Collections.Accounts), where("ownerUid", "==", ownerUid), orderBy("name")),
-      (snap) => setAccounts(snap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name })))
+      (snap) => setAccounts(
+        snap.docs.map((d) => {
+          const data = d.data() as any;
+          return { id: d.id, name: data.name, color: data.color } as Account;
+        })
+      )
     );
     const unsubCurrencies = onSnapshot(
       query(collection(db, Collections.Currencies), where("ownerUid", "==", ownerUid), orderBy("name")),

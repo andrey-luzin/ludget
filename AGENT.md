@@ -6,6 +6,7 @@
 - Create new components in the Components directory in directories with a capital letter, except for the directory UI
 - Wrap the body of the condition in a syntax block
 - Move all event handlers into separate named functions, rather than defining them inline inside JSX.
+- Don't repeat yourself
 
 # Git instructions
 If completing the user's task requires writing or modifying files:

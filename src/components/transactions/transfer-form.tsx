@@ -12,7 +12,7 @@ import { Collections } from "@/types/collections";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
 
-type Account = { id: string; name: string };
+type Account = { id: string; name: string; color?: string };
 
 export function TransferForm({ accounts, editingTx, onDone }: { accounts: Account[]; editingTx?: any | null; onDone?: () => void }) {
   const { ownerUid } = useAuth();
@@ -90,18 +90,26 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
         <div className="grid gap-1">
           <label className="text-sm font-medium">Счет откуда</label>
           <Select value={fromId} onValueChange={setFromId}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+              {accounts.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  <span className="font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
         <div className="grid gap-1">
           <label className="text-sm font-medium">Счет куда</label>
           <Select value={toId} onValueChange={setToId}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+              {accounts.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  <span className="font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

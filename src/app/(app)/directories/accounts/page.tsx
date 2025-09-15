@@ -26,7 +26,7 @@ import { Collections, SubCollections } from "@/types/collections";
 
 type Currency = { id: string; name: string };
 type Balance = { id: string; currencyId: string; amount: number };
-type Account = { id: string; name: string };
+type Account = { id: string; name: string; color?: string };
 
 export default function AccountsPage() {
   const { ownerUid } = useAuth();
@@ -41,7 +41,12 @@ export default function AccountsPage() {
   useEffect(() => {
     if (!ownerUid) return;
     const unsub = onSnapshot(query(collection(db, Collections.Accounts), where("ownerUid", "==", ownerUid), orderBy("name")), (snap) => {
-      setAccounts(snap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name })));
+      setAccounts(
+        snap.docs.map((d) => {
+          const data = d.data() as any;
+          return { id: d.id, name: data.name, color: data.color } as Account;
+        })
+      );
     });
     return () => unsub();
   }, [ownerUid]);
@@ -89,17 +94,22 @@ export default function AccountsPage() {
       <h1 className="text-2xl font-semibold tracking-tight">Счета</h1>
       <p className="text-muted-foreground mt-1">Управляйте счетами и их валютами.</p>
 
-      <div className="mt-6 flex gap-2">
-        <Input
-          placeholder="Название счета"
-          value={newName}
-          onChange={(e) => {
-            setNewName(e.target.value);
-            if (addAccountError) setAddAccountError(null);
-          }}
-        />
-        <Button onClick={addAccount} loading={pendingAdd}>Добавить</Button>
-      </div>
+  <div className="mt-6 flex items-end gap-2">
+    <div className="grid gap-1 grow-1">
+      <label className="text-sm font-medium">Добавить счет</label>
+      <Input
+        placeholder="Название счета"
+        value={newName}
+        onChange={(e) => {
+          setNewName(e.target.value);
+          if (addAccountError) {
+            setAddAccountError(null);
+          }
+        }}
+      />
+    </div>
+    <Button onClick={addAccount} loading={pendingAdd}>Добавить</Button>
+  </div>
       {addAccountError ? <Alert className="mt-2">{addAccountError}</Alert> : null}
 
       <div className="mt-6 grid gap-3">
@@ -137,9 +147,9 @@ function AccountItem({
 }: {
   account: Account;
   currencies: Currency[];
-  editingName?: string;
-  setEditingName: (name: string) => void;
-  onSave: () => void;
+  editingName?: string; // legacy, not used in new flow
+  setEditingName: (name: string) => void; // legacy, not used in new flow
+  onSave: () => void; // legacy, not used in new flow
   onAskDelete: () => void;
 }) {
   const { ownerUid } = useAuth();
@@ -148,6 +158,18 @@ function AccountItem({
   const [adding, setAdding] = useState<{ currencyId: string; amount: string }>({ currencyId: "", amount: "0" });
   const [addError, setAddError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showBalancesEditor, setShowBalancesEditor] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editName, setEditName] = useState(account.name);
+  const [editColor, setEditColor] = useState<string>(account.color || "#000000");
+
+  // When opening editor, sync name and color
+  useEffect(() => {
+    if (showBalancesEditor) {
+      setEditName(account.name);
+      setEditColor(account.color || "#000000");
+    }
+  }, [showBalancesEditor, account.name, account.color]);
 
   useEffect(() => {
     if (!ownerUid) return;
@@ -260,96 +282,138 @@ function AccountItem({
   return (
     <div className="border rounded-md p-3">
       <div className="flex items-center gap-2">
-        {editingName !== undefined && editingName !== "" ? (
-          <>
-            <Input className="max-w-xs" value={editingName} onChange={(e) => setEditingName(e.target.value)} />
-            <Button variant="secondary" onClick={onSave}>Сохранить</Button>
-            <Button variant="ghost" onClick={() => setEditingName("")}>Отмена</Button>
-          </>
-        ) : (
-          <>
-            <div className="text-base font-medium flex-1">{account.name}</div>
-            <Button variant="outline" onClick={() => setEditingName(account.name)}>Переименовать</Button>
-            <Button variant="destructive" onClick={onAskDelete}>Удалить</Button>
-          </>
-        )}
+        <div className="text-base font-medium flex-1" style={{ color: account.color || undefined }}>{account.name}</div>
+        <Button variant="secondary" onClick={() => setShowBalancesEditor((s) => !s)}>
+          {showBalancesEditor ? "Свернуть" : "Править"}
+        </Button>
+        <Button variant="destructive" onClick={onAskDelete}>Удалить</Button>
       </div>
 
-      <div className="mt-4 grid justify-start gap-2">
-        {visibleDrafts.map((b) => (
-          <div key={b.id} className="flex items-center gap-2">
-            <Select value={b.currencyId} onValueChange={(v) => updateDraft(b.id, { currencyId: v })}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Выберите валюту" />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              className="w-40"
-              type="number"
-              value={String(b.amount)}
-              onChange={(e) => updateDraft(b.id, { amount: e.target.value })}
-            />
-            <span className={cn(
-              'ml-2',
-              Number(b.amount) >= 0 ? "text-green-600" : "text-red-600"
-            )}>
-              {Number(b.amount)}
-            </span>
-            <span className="text-muted-foreground">
-              {currencyLabel(b.currencyId)}
-            </span>
-            <ConfirmBalanceDelete
-              onDelete={() => {
-                if ((b as any).isNew) {
-                  setDrafts((ds) => ds.filter((x) => x.id !== b.id));
-                } else {
-                  markDelete(b.id);
-                }
-              }}
-            />
-          </div>
-        ))}
+      {/* Collapsed primitive view */}
+      {!showBalancesEditor ? (
+        <div className="my-3 text-muted-foreground">
+          {serverBalances.length === 0 ? (
+            <span>Валюты не добавлены</span>
+          ) : (
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {serverBalances.map((b) => {
+                const currency = currencyLabel(b.currencyId);
 
-        <div className="flex items-end gap-2 pt-2">
-          <div className="grid gap-1">
-            <label className="text-sm font-medium">Валюта</label>
-            <Select value={adding.currencyId} onValueChange={(v) => setAdding((s) => ({ ...s, currencyId: v }))}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Выберите валюту" />
-              </SelectTrigger>
-              <SelectContent>
-                {currencies.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-1">
-            <label className="text-sm font-medium">Остаток</label>
-            <Input
-              className="w-40"
-              type="number"
-              value={adding.amount}
-              onChange={(e) => setAdding((s) => ({ ...s, amount: e.target.value }))}
-            />
-          </div>
-          <Button className="self-end" onClick={addBalance} variant="outline">Добавить валюту</Button>
+                return (
+                  <div key={b.id} className="flex items-center gap-1">
+                    <span
+                      className={cn(
+                        "rounded font-semibold px-2 py-0.5",
+                        Number(b.amount) >= 0
+                          ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-400/10"
+                          : "text-rose-700 bg-rose-50 dark:text-rose-400 dark:bg-rose-400/10"
+                      )}
+                    >
+                      {b.amount}
+                    </span>
+                    <span className={cn(
+                      "font-medium",
+                      { 'text-sm':  currency.length > 2}
+                    )}>
+                      {currency}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
+      ) : null}
 
-        {addError ? (
-          <Alert className="mt-2" variant="default">{addError}</Alert>
-        ) : null}
+      {/* Expanded editor view */}
+      {showBalancesEditor ? (
+      <div className="mt-4 grid justify-start gap-2">
+        <div className="flex items-end gap-2">
+          <div className="grid gap-1">
+            <label className="text-sm font-medium">Название</label>
+            <Input className="max-w-xs" value={editName} onChange={(e) => setEditName(e.target.value)} />
+          </div>
+          <div className="grid gap-1">
+            <label className="text-sm font-medium">Цвет</label>
+            <input
+              type="color"
+              value={editColor}
+              onChange={(e) => setEditColor(e.target.value)}
+              className="h-9 w-10 overflow-hidden rounded cursor-pointer border"
+              title="Цвет заголовка"
+            />
+          </div>
+        </div>
+        {visibleDrafts.map((b) => {
+          const currency = currencyLabel(b.currencyId);
+          const amount = Number(b.amount);
+
+          return (
+            <div key={b.id} className="flex items-center gap-2">
+              <Select value={b.currencyId} onValueChange={(v) => updateDraft(b.id, { currencyId: v })}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Выберите валюту" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                className="w-40"
+                type="number"
+                value={String(b.amount)}
+                onChange={(e) => updateDraft(b.id, { amount: e.target.value })}
+              />
+              <div>
+                <span
+                  className={cn(
+                    "ml-2 px-1.5 py-0.5 rounded text-sm font-semibold",
+                    amount >= 0
+                      ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-400/10"
+                      : "text-rose-700 bg-rose-50 dark:text-rose-400 dark:bg-rose-400/10"
+                  )}
+                >
+                  {amount}
+                </span>
+                <span className={cn(
+                  "text-muted-foreground ml-1",
+                  { 'text-sm':  currency.length > 2}
+                )}>
+                  {currency}
+                </span>
+              </div>
+              <ConfirmBalanceDelete
+                onDelete={() => {
+                  if ((b as any).isNew) {
+                    setDrafts((ds) => ds.filter((x) => x.id !== b.id));
+                  } else {
+                    markDelete(b.id);
+                  }
+                }}
+              />
+            </div>
+          )
+        })}
+
+        {/* Add currency block removed from editor area */}
 
         <div className="pt-2 flex gap-2">
           <Button
-            onClick={persist}
+            onClick={async () => {
+              // Save name/color if changed
+              const updates: any = {};
+              if (editName.trim() && editName.trim() !== account.name) updates.name = editName.trim();
+              if ((account.color || "#000000") !== editColor) updates.color = editColor;
+              if (Object.keys(updates).length) {
+                await updateDoc(doc(db, Collections.Accounts, account.id), updates);
+              }
+              await persist();
+              setShowBalancesEditor(false);
+            }}
             loading={saving}
-            disabled={!isDirty || hasDuplicates}
+            disabled={!(isDirty || editName.trim() !== account.name || (account.color || "#000000") !== editColor) || hasDuplicates}
             title={hasDuplicates ? "Исправьте дубликаты валют" : undefined}
           >
             Обновить
@@ -358,6 +422,48 @@ function AccountItem({
             <span className="text-xs text-red-600 self-center">Выбраны повторяющиеся валюты. Сделайте их уникальными.</span>
           ) : null}
         </div>
+      </div>
+      ) : null}
+
+      {/* Add currency block - outside editor via toggle */}
+      <div className="pt-2">
+        {!showAddForm ? (
+          <Button variant="outline" onClick={() => setShowAddForm(true)}>Добавить валюту</Button>
+        ) : (
+          <div className="flex items-end gap-2">
+            <div className="grid gap-1">
+              <label className="text-sm font-medium">Валюта</label>
+              <Select value={adding.currencyId} onValueChange={(v) => setAdding((s) => ({ ...s, currencyId: v }))}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Выберите валюту" />
+                </SelectTrigger>
+                <SelectContent>
+                  {currencies.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1">
+              <label className="text-sm font-medium">Остаток</label>
+              <Input
+                className="w-40"
+                type="number"
+                value={adding.amount}
+                onChange={(e) => setAdding((s) => ({ ...s, amount: e.target.value }))}
+              />
+            </div>
+            <Button className="self-end" onClick={async () => { await addBalance(); setShowAddForm(false); }}>
+              Добавить
+            </Button>
+            <Button className="self-end" variant="ghost" onClick={() => setShowAddForm(false)}>
+              Отмена
+            </Button>
+          </div>
+        )}
+        {addError ? (
+          <Alert className="mt-2" variant="default">{addError}</Alert>
+        ) : null}
       </div>
     </div>
   );

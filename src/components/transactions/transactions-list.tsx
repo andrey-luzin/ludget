@@ -8,13 +8,13 @@ import { collection, deleteDoc, doc, onSnapshot, orderBy, query, where } from "f
 import { formatISO, parseISO, format, startOfDay, endOfDay, startOfMonth } from "date-fns";
 import { subDays } from "date-fns/subDays";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 
 type TxType = "expense" | "income" | "transfer" | "exchange";
 
-type Account = { id: string; name: string };
+type Account = { id: string; name: string; color?: string };
 type Currency = { id: string; name: string };
 type Category = { id: string; name: string };
 type Source = { id: string; name: string };
@@ -38,11 +38,11 @@ export function TransactionsList({
 }) {
   const { ownerUid } = useAuth();
   const [items, setItems] = useState<Tx[]>([]);
-  const ALL = "__all__";
-  const [accountFilter, setAccountFilter] = useState<string>(ALL);
+  const [accountFilter, setAccountFilter] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
+  const accColor = (id: string) => accounts.find((a) => a.id === id)?.color;
   const curName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
   const catName = (id?: string) => categories?.find((c) => c.id === id)?.name ?? "";
   const srcName = (id?: string) => sources?.find((s) => s.id === id)?.name ?? "";
@@ -66,9 +66,10 @@ export function TransactionsList({
   const filtered = useMemo(() => {
     let arr = items;
     // Account filter
-    if (accountFilter !== ALL) {
+    if (accountFilter.length > 0) {
+      const set = new Set(accountFilter);
       arr = arr.filter(
-        (it) => it.accountId === accountFilter || it.fromAccountId === accountFilter || it.toAccountId === accountFilter
+        (it) => set.has(it.accountId) || set.has(it.fromAccountId) || set.has(it.toAccountId)
       );
     }
     // Date range filter
@@ -90,8 +91,6 @@ export function TransactionsList({
     for (const it of filtered) {
       const d: Date = it.date?.toDate ? it.date.toDate() : new Date(it.date);
       const key = formatISO(d, { representation: "date" });
-      console.log('key', key);
-      
       const arr = byDay.get(key) || [];
       arr.push(it);
       byDay.set(key, arr);
@@ -104,19 +103,15 @@ export function TransactionsList({
   }
 
   return (
-    <div className="mt-6">
-      <div className="mb-2 flex flex-wrap items-end gap-2">
+    <div className="mt-6 rounded-xl border bg-muted/30 p-4 md:p-5">
+      <div className="mb-5 md:mb-6 flex flex-wrap items-end gap-2">
         <div className="grid gap-1">
           <label className="text-sm font-medium">Фильтр по счету</label>
-          <Select value={accountFilter} onValueChange={setAccountFilter}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="Все счета" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>Все счета</SelectItem>
-              {accounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <AccountsMultiSelect
+            accounts={accounts}
+            value={accountFilter}
+            onChange={setAccountFilter}
+          />
         </div>
 
         <div className="grid gap-1">
@@ -145,12 +140,14 @@ export function TransactionsList({
                       </>
                     ) : type === "transfer" ? (
                       <>
-                        <span className="font-medium">{accName(it.fromAccountId)} → {accName(it.toAccountId)}</span>
+                        <span className="font-medium" style={{ color: accColor(it.fromAccountId) || undefined }}>{accName(it.fromAccountId)}</span>
+                        <span className="mx-1.5">→</span>
+                        <span className="font-medium" style={{ color: accColor(it.toAccountId) || undefined }}>{accName(it.toAccountId)}</span>
                         {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
                       </>
                     ) : (
                       <>
-                        <span className="font-medium">{accName(it.accountId)}</span>
+                        <span className="font-medium" style={{ color: accColor(it.accountId) || undefined }}>{accName(it.accountId)}</span>
                         {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
                       </>
                     )}
@@ -179,6 +176,84 @@ export function TransactionsList({
         ))}
       </div>
     </div>
+  );
+}
+
+function AccountsMultiSelect({
+  accounts,
+  value,
+  onChange,
+}: {
+  accounts: Account[];
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [temp, setTemp] = useState<string[]>(value || []);
+
+  // Sync temp when opening the popover
+  useEffect(() => {
+    if (open) setTemp(value || []);
+  }, [open]);
+
+  const label = useMemo(() => {
+    if (!value?.length) return "Все счета";
+    if (value.length === 1) return accounts.find((a) => a.id === value[0])?.name ?? "1 счёт";
+    return `Счета: ${value.length}`;
+  }, [value, accounts]);
+
+  function toggle(id: string, checked: boolean) {
+    const set = new Set(temp);
+    if (checked) set.add(id);
+    else set.delete(id);
+    setTemp(Array.from(set));
+  }
+
+  function clear() {
+    setTemp([]);
+  }
+
+  function selectAllToggle() {
+    const allIds = accounts.map((a) => a.id);
+    const isAllSelected = temp.length === allIds.length && allIds.length > 0;
+    setTemp(isAllSelected ? [] : allIds);
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="min-w-56 justify-start">
+          {label}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="p-3 w-64">
+        <div className="grid gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <Button variant="ghost" size="sm" onClick={clear}>Сбросить</Button>
+            <Button variant="secondary" size="sm" onClick={selectAllToggle}>
+              {temp.length === accounts.length && accounts.length > 0 ? "Сбросить все" : "Выбрать все"}
+            </Button>
+          </div>
+          <div className="max-h-56 overflow-auto rounded-md border p-2">
+            {accounts.map((a) => {
+              const checked = temp.includes(a.id);
+              return (
+                <label key={a.id} className="flex items-center gap-2 py-1 cursor-pointer select-none">
+                  <Checkbox
+                    checked={checked}
+                    onCheckedChange={(v) => toggle(a.id, Boolean(v))}
+                  />
+                  <span className="text-sm font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
+                </label>
+              );
+            })}
+          </div>
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => { onChange(temp); setOpen(false); }}>Применить</Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -257,7 +332,7 @@ function DateRangePicker({
             </div>
             <div className="flex items-center justify-between gap-2 pt-1">
               <Button variant="ghost" onClick={clear}>Сбросить</Button>
-              <Button onClick={() => { onChange(temp || {}); setOpen(false); }}>Готово</Button>
+              <Button onClick={() => { onChange(temp || {}); setOpen(false); }}>Применить</Button>
             </div>
           </div>
         </div>
