@@ -17,10 +17,12 @@ type Balance = { id: string; currencyId: string; amount: number };
 type Currency = { id: string; name: string };
 type Category = { id: string; name: string; parentId?: string | null };
 
-export function ExpenseForm({ accounts, currencies, categories }: {
+export function ExpenseForm({ accounts, currencies, categories, editingTx, onDone }: {
   accounts: Account[];
   currencies: Currency[];
   categories: Category[];
+  editingTx?: any | null;
+  onDone?: () => void;
 }) {
   const { ownerUid } = useAuth();
   const [accountId, setAccountId] = useState("");
@@ -31,6 +33,26 @@ export function ExpenseForm({ accounts, currencies, categories }: {
   const [comment, setComment] = useState("");
   const [date, setDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
+  const currencyName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
+
+  // default account
+  useEffect(() => {
+    if (!accountId && accounts.length > 0) {
+      setAccountId(accounts[0].id);
+    }
+  }, [accounts]);
+
+  // Prefill from editingTx
+  useEffect(() => {
+    if (editingTx) {
+      setAccountId(editingTx.accountId || "");
+      setCurrencyId(editingTx.currencyId || "");
+      setCategoryId(editingTx.categoryId || "");
+      setAmount(editingTx.amount != null ? String(editingTx.amount) : "");
+      setComment(editingTx.comment || "");
+      setDate(editingTx.date?.toDate ? editingTx.date.toDate() : new Date(editingTx.date || Date.now()));
+    }
+  }, [editingTx]);
 
   useEffect(() => {
     if (!ownerUid || !accountId) {
@@ -71,20 +93,33 @@ export function ExpenseForm({ accounts, currencies, categories }: {
       setError("Заполните обязательные поля.");
       return;
     }
-    await addDoc(collection(db, Collections.Transactions), {
-      type: "expense",
-      accountId,
-      currencyId,
-      categoryId,
-      amount: Number(amount.replace(/,/g, ".")),
-      comment: comment || null,
-      date,
-      ownerUid,
-      createdAt: serverTimestamp(),
-    });
+    if (editingTx?.id) {
+      const { updateDoc, doc } = await import("firebase/firestore");
+      await updateDoc(doc(db, Collections.Transactions, editingTx.id), {
+        accountId,
+        currencyId,
+        categoryId,
+        amount: Number(amount.replace(/,/g, ".")),
+        comment: comment || null,
+        date,
+      } as any);
+    } else {
+      await addDoc(collection(db, Collections.Transactions), {
+        type: "expense",
+        accountId,
+        currencyId,
+        categoryId,
+        amount: Number(amount.replace(/,/g, ".")),
+        comment: comment || null,
+        date,
+        ownerUid,
+        createdAt: serverTimestamp(),
+      });
+    }
     setAmount("");
     setComment("");
     setError(null);
+    onDone?.();
   }
 
   const categoriesFlat = useMemo(() => categories, [categories]);
@@ -117,7 +152,7 @@ export function ExpenseForm({ accounts, currencies, categories }: {
           <Select value={currencyId} onValueChange={setCurrencyId}>
             <SelectTrigger className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{b.currencyId}</SelectItem>)}
+              {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{currencyName(b.currencyId)}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -143,10 +178,12 @@ export function ExpenseForm({ accounts, currencies, categories }: {
 
       {error ? <Alert>{error}</Alert> : null}
 
-      <div className="flex justify-end pt-1">
+      <div className="flex justify-end gap-2 pt-1">
+        {editingTx ? (
+          <Button variant="ghost" onClick={() => onDone?.()}>Отменить</Button>
+        ) : null}
         <Button onClick={submit}>Сохранить</Button>
       </div>
     </div>
   );
 }
-

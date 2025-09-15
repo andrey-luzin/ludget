@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
 
 type Account = { id: string; name: string };
 
-export function TransferForm({ accounts }: { accounts: Account[] }) {
+export function TransferForm({ accounts, editingTx, onDone }: { accounts: Account[]; editingTx?: any | null; onDone?: () => void }) {
   const { ownerUid } = useAuth();
   const [fromId, setFromId] = useState("");
   const [toId, setToId] = useState("");
@@ -22,6 +22,24 @@ export function TransferForm({ accounts }: { accounts: Account[] }) {
   const [comment, setComment] = useState("");
   const [date, setDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
+
+  // default accounts
+  useEffect(() => {
+    if (!fromId && accounts.length > 0) {
+      setFromId(accounts[0].id);
+      setToId(accounts[1]?.id || accounts[0].id);
+    }
+  }, [accounts]);
+
+  useEffect(() => {
+    if (editingTx) {
+      setFromId(editingTx.fromAccountId || "");
+      setToId(editingTx.toAccountId || "");
+      setAmount(editingTx.amount != null ? String(editingTx.amount) : "");
+      setComment(editingTx.comment || "");
+      setDate(editingTx.date?.toDate ? editingTx.date.toDate() : new Date(editingTx.date || Date.now()));
+    }
+  }, [editingTx]);
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     setAmount(sanitizeMoneyInput(e.target.value));
@@ -39,19 +57,31 @@ export function TransferForm({ accounts }: { accounts: Account[] }) {
       setError("Заполните обязательные поля.");
       return;
     }
-    await addDoc(collection(db, Collections.Transactions), {
-      type: "transfer",
-      fromAccountId: fromId,
-      toAccountId: toId,
-      amount: Number(amount.replace(/,/g, ".")),
-      comment: comment || null,
-      date,
-      ownerUid,
-      createdAt: serverTimestamp(),
-    });
+    if (editingTx?.id) {
+      const { updateDoc, doc } = await import("firebase/firestore");
+      await updateDoc(doc(db, Collections.Transactions, editingTx.id), {
+        fromAccountId: fromId,
+        toAccountId: toId,
+        amount: Number(amount.replace(/,/g, ".")),
+        comment: comment || null,
+        date,
+      } as any);
+    } else {
+      await addDoc(collection(db, Collections.Transactions), {
+        type: "transfer",
+        fromAccountId: fromId,
+        toAccountId: toId,
+        amount: Number(amount.replace(/,/g, ".")),
+        comment: comment || null,
+        date,
+        ownerUid,
+        createdAt: serverTimestamp(),
+      });
+    }
     setAmount("");
     setComment("");
     setError(null);
+    onDone?.();
   }
 
   return (
@@ -94,10 +124,12 @@ export function TransferForm({ accounts }: { accounts: Account[] }) {
 
       {error ? <Alert>{error}</Alert> : null}
 
-      <div className="flex justify-end pt-1">
+      <div className="flex justify-end gap-2 pt-1">
+        {editingTx ? (
+          <Button variant="ghost" onClick={() => onDone?.()}>Отменить</Button>
+        ) : null}
         <Button onClick={submit}>Сохранить</Button>
       </div>
     </div>
   );
 }
-

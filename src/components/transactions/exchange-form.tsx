@@ -15,7 +15,9 @@ import { sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
 type Account = { id: string; name: string };
 type Balance = { id: string; currencyId: string; amount: number };
 
-export function ExchangeForm({ accounts }: { accounts: Account[] }) {
+type Currency = { id: string; name: string };
+
+export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { accounts: Account[]; currencies: Currency[]; editingTx?: any | null; onDone?: () => void }) {
   const { ownerUid } = useAuth();
   const [accountId, setAccountId] = useState("");
   const [accountBalances, setAccountBalances] = useState<Balance[]>([]);
@@ -26,6 +28,25 @@ export function ExchangeForm({ accounts }: { accounts: Account[] }) {
   const [comment, setComment] = useState("");
   const [date, setDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
+  const currencyName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
+
+  useEffect(() => {
+    if (!accountId && accounts.length > 0) {
+      setAccountId(accounts[0].id);
+    }
+  }, [accounts]);
+
+  useEffect(() => {
+    if (editingTx) {
+      setAccountId(editingTx.accountId || "");
+      setFromCurrencyId(editingTx.fromCurrencyId || "");
+      setToCurrencyId(editingTx.toCurrencyId || "");
+      setAmountFrom(editingTx.amountFrom != null ? String(editingTx.amountFrom) : "");
+      setAmountTo(editingTx.amountTo != null ? String(editingTx.amountTo) : "");
+      setComment(editingTx.comment || "");
+      setDate(editingTx.date?.toDate ? editingTx.date.toDate() : new Date(editingTx.date || Date.now()));
+    }
+  }, [editingTx]);
 
   useEffect(() => {
     if (!ownerUid || !accountId) {
@@ -72,22 +93,36 @@ export function ExchangeForm({ accounts }: { accounts: Account[] }) {
       setError("Заполните обязательные поля.");
       return;
     }
-    await addDoc(collection(db, Collections.Transactions), {
-      type: "exchange",
-      accountId,
-      fromCurrencyId,
-      toCurrencyId,
-      amountFrom: Number(amountFrom.replace(/,/g, ".")),
-      amountTo: Number(amountTo.replace(/,/g, ".")),
-      comment: comment || null,
-      date,
-      ownerUid,
-      createdAt: serverTimestamp(),
-    });
+    if (editingTx?.id) {
+      const { updateDoc, doc } = await import("firebase/firestore");
+      await updateDoc(doc(db, Collections.Transactions, editingTx.id), {
+        accountId,
+        fromCurrencyId,
+        toCurrencyId,
+        amountFrom: Number(amountFrom.replace(/,/g, ".")),
+        amountTo: Number(amountTo.replace(/,/g, ".")),
+        comment: comment || null,
+        date,
+      } as any);
+    } else {
+      await addDoc(collection(db, Collections.Transactions), {
+        type: "exchange",
+        accountId,
+        fromCurrencyId,
+        toCurrencyId,
+        amountFrom: Number(amountFrom.replace(/,/g, ".")),
+        amountTo: Number(amountTo.replace(/,/g, ".")),
+        comment: comment || null,
+        date,
+        ownerUid,
+        createdAt: serverTimestamp(),
+      });
+    }
     setAmountFrom("");
     setAmountTo("");
     setComment("");
     setError(null);
+    onDone?.();
   }
 
   return (
@@ -114,7 +149,7 @@ export function ExchangeForm({ accounts }: { accounts: Account[] }) {
           <Select value={fromCurrencyId} onValueChange={setFromCurrencyId}>
             <SelectTrigger className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{b.currencyId}</SelectItem>)}
+              {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{currencyName(b.currencyId)}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -130,7 +165,7 @@ export function ExchangeForm({ accounts }: { accounts: Account[] }) {
           <Select value={toCurrencyId} onValueChange={setToCurrencyId}>
             <SelectTrigger className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{b.currencyId}</SelectItem>)}
+              {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{currencyName(b.currencyId)}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -149,10 +184,12 @@ export function ExchangeForm({ accounts }: { accounts: Account[] }) {
 
       {error ? <Alert>{error}</Alert> : null}
 
-      <div className="flex justify-end pt-1">
+      <div className="flex justify-end gap-2 pt-1">
+        {editingTx ? (
+          <Button variant="ghost" onClick={() => onDone?.()}>Отменить</Button>
+        ) : null}
         <Button onClick={submit}>Сохранить</Button>
       </div>
     </div>
   );
 }
-

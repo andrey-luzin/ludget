@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -293,8 +294,10 @@ function AccountItem({
               value={String(b.amount)}
               onChange={(e) => updateDraft(b.id, { amount: e.target.value })}
             />
-            <span className={Number(b.amount) >= 0 ? "text-green-600" : "text-red-600"}>
-              {Number(b.amount) >= 0 ? "+" : ""}
+            <span className={cn(
+              'ml-2',
+              Number(b.amount) >= 0 ? "text-green-600" : "text-red-600"
+            )}>
               {Number(b.amount)}
             </span>
             <span className="text-muted-foreground">
@@ -312,24 +315,30 @@ function AccountItem({
           </div>
         ))}
 
-        <div className="flex items-center gap-2 pt-2">
-          <Select value={adding.currencyId} onValueChange={(v) => setAdding((s) => ({ ...s, currencyId: v }))}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Выберите валюту" />
-            </SelectTrigger>
-            <SelectContent>
-              {currencies.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            className="w-40"
-            type="number"
-            value={adding.amount}
-            onChange={(e) => setAdding((s) => ({ ...s, amount: e.target.value }))}
-          />
-          <Button onClick={addBalance} variant="outline">Добавить валюту</Button>
+        <div className="flex items-end gap-2 pt-2">
+          <div className="grid gap-1">
+            <label className="text-sm font-medium">Валюта</label>
+            <Select value={adding.currencyId} onValueChange={(v) => setAdding((s) => ({ ...s, currencyId: v }))}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Выберите валюту" />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1">
+            <label className="text-sm font-medium">Остаток</label>
+            <Input
+              className="w-40"
+              type="number"
+              value={adding.amount}
+              onChange={(e) => setAdding((s) => ({ ...s, amount: e.target.value }))}
+            />
+          </div>
+          <Button className="self-end" onClick={addBalance} variant="outline">Добавить валюту</Button>
         </div>
 
         {addError ? (

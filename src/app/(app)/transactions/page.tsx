@@ -10,6 +10,7 @@ import { ExpenseForm } from "@/components/transactions/expense-form";
 import { IncomeForm } from "@/components/transactions/income-form";
 import { TransferForm } from "@/components/transactions/transfer-form";
 import { ExchangeForm } from "@/components/transactions/exchange-form";
+import { TransactionsList } from "@/components/transactions/transactions-list";
 
 type Account = { id: string; name: string };
 type Currency = { id: string; name: string };
@@ -22,6 +23,10 @@ export default function TransactionsPage() {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
+  const [editingExpense, setEditingExpense] = useState<any | null>(null);
+  const [editingIncome, setEditingIncome] = useState<any | null>(null);
+  const [editingTransfer, setEditingTransfer] = useState<any | null>(null);
+  const [editingExchange, setEditingExchange] = useState<any | null>(null);
 
   useEffect(() => {
     if (!ownerUid) {
@@ -59,19 +64,26 @@ export default function TransactionsPage() {
         </TabsList>
 
         <TabsContent value="expense">
-          <ExpenseForm accounts={accounts} currencies={currencies} categories={categories} />
+          <h2 className="text-lg font-medium mb-3">Расход</h2>
+          <ExpenseForm accounts={accounts} currencies={currencies} categories={categories} editingTx={editingExpense} onDone={() => setEditingExpense(null)} />
+          <TransactionsList type="expense" accounts={accounts} currencies={currencies} categories={categories} onEdit={setEditingExpense} />
         </TabsContent>
         <TabsContent value="income">
-          <IncomeForm accounts={accounts} sources={sources} />
+          <h2 className="text-lg font-medium mb-3">Доход</h2>
+          <IncomeForm accounts={accounts} sources={sources} currencies={currencies} editingTx={editingIncome} onDone={() => setEditingIncome(null)} />
+          <TransactionsList type="income" accounts={accounts} currencies={currencies} sources={sources} onEdit={setEditingIncome} />
         </TabsContent>
         <TabsContent value="transfer">
-          <TransferForm accounts={accounts} />
+          <h2 className="text-lg font-medium mb-3">Перемещение</h2>
+          <TransferForm accounts={accounts} editingTx={editingTransfer} onDone={() => setEditingTransfer(null)} />
+          <TransactionsList type="transfer" accounts={accounts} currencies={currencies} onEdit={setEditingTransfer} />
         </TabsContent>
         <TabsContent value="exchange">
-          <ExchangeForm accounts={accounts} />
+          <h2 className="text-lg font-medium mb-3">Обмен валют</h2>
+          <ExchangeForm accounts={accounts} currencies={currencies} editingTx={editingExchange} onDone={() => setEditingExchange(null)} />
+          <TransactionsList type="exchange" accounts={accounts} currencies={currencies} onEdit={setEditingExchange} />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
-
