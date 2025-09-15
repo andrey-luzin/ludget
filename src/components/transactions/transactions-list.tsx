@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useId } from "react";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
 
 type TxType = "expense" | "income" | "transfer" | "exchange";
 
@@ -40,6 +41,8 @@ export function TransactionsList({
   const [items, setItems] = useState<Tx[]>([]);
   const [accountFilter, setAccountFilter] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const accFilterId = useId();
+  const dateFilterId = useId();
 
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
   const accColor = (id: string) => accounts.find((a) => a.id === id)?.color;
@@ -106,17 +109,18 @@ export function TransactionsList({
     <div className="mt-6 rounded-xl border bg-muted/30 p-4 md:p-5">
       <div className="mb-5 md:mb-6 flex flex-wrap items-end gap-2">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Фильтр по счету</label>
+          <Label htmlFor={accFilterId}>Фильтр по счету</Label>
           <AccountsMultiSelect
             accounts={accounts}
             value={accountFilter}
             onChange={setAccountFilter}
+            triggerId={accFilterId}
           />
         </div>
 
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Период</label>
-          <DateRangePicker value={dateRange} onChange={setDateRange} />
+          <Label htmlFor={dateFilterId}>Период</Label>
+          <DateRangePicker value={dateRange} onChange={setDateRange} triggerId={dateFilterId} />
         </div>
       </div>
 
@@ -183,10 +187,12 @@ function AccountsMultiSelect({
   accounts,
   value,
   onChange,
+  triggerId,
 }: {
   accounts: Account[];
   value: string[];
   onChange: (v: string[]) => void;
+  triggerId?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [temp, setTemp] = useState<string[]>(value || []);
@@ -222,7 +228,7 @@ function AccountsMultiSelect({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="min-w-56 justify-start">
+        <Button id={triggerId} variant="outline" className="min-w-56 justify-start">
           {label}
         </Button>
       </PopoverTrigger>
@@ -260,9 +266,11 @@ function AccountsMultiSelect({
 function DateRangePicker({
   value,
   onChange,
+  triggerId,
 }: {
   value: { from?: Date; to?: Date };
   onChange: (v: { from?: Date; to?: Date }) => void;
+  triggerId?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [temp, setTemp] = useState<{ from?: Date; to?: Date }>(value || {});
@@ -307,7 +315,7 @@ function DateRangePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="min-w-56 justify-start">
+        <Button id={triggerId} variant="outline" className="min-w-56 justify-start">
           {label}
         </Button>
       </PopoverTrigger>

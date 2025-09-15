@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { DatePicker } from "@/components/date-picker";
+import { Label } from "@/components/ui/label";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
@@ -26,6 +27,12 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
   onDone?: () => void;
 }) {
   const { ownerUid } = useAuth();
+  const accSelId = useId();
+  const dateId = useId();
+  const amountId = useId();
+  const currencySelId = useId();
+  const sourceSelId = useId();
+  const commentId = useId();
   const [accountId, setAccountId] = useState("");
   const [accountBalances, setAccountBalances] = useState<Balance[]>([]);
   const [currencyId, setCurrencyId] = useState("");
@@ -113,9 +120,9 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
     <div className="grid gap-3">
       <div className="flex items-end justify-between gap-3">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Счет</label>
+          <Label htmlFor={accSelId}>Счет</Label>
           <Select value={accountId} onValueChange={setAccountId}>
-            <SelectTrigger className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={accSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
@@ -126,20 +133,20 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
           </Select>
         </div>
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Дата</label>
-          <DatePicker value={date} onChange={setDate} />
+          <Label htmlFor={dateId}>Дата</Label>
+          <DatePicker value={date} onChange={setDate} triggerId={dateId} />
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Сумма</label>
-          <Input className="w-40" type="text" placeholder="0.0" value={amount} onChange={handleAmountChange} onBlur={handleAmountBlur} />
+          <Label htmlFor={amountId}>Сумма</Label>
+          <Input id={amountId} className="w-40" type="text" placeholder="0.0" value={amount} onChange={handleAmountChange} onBlur={handleAmountBlur} />
         </div>
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Валюта</label>
+          <Label htmlFor={currencySelId}>Валюта</Label>
           <Select value={currencyId} onValueChange={setCurrencyId}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={currencySelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
               {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{currencyName(b.currencyId)}</SelectItem>)}
             </SelectContent>
@@ -149,9 +156,9 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Источник</label>
+          <Label htmlFor={sourceSelId}>Источник</Label>
           <Select value={sourceId} onValueChange={setSourceId}>
-            <SelectTrigger className="w-64"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={sourceSelId} className="w-64"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
               {sources.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
@@ -162,8 +169,8 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
           </Select>
         </div>
         <div className="grid gap-1 flex-1 min-w-56">
-          <label className="text-sm font-medium">Комментарий</label>
-          <Input placeholder="Опционально" value={comment} onChange={(e) => setComment(e.target.value)} />
+          <Label htmlFor={commentId}>Комментарий</Label>
+          <Input id={commentId} placeholder="Опционально" value={comment} onChange={(e) => setComment(e.target.value)} />
         </div>
       </div>
 

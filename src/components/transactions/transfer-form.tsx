@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { DatePicker } from "@/components/date-picker";
+import { Label } from "@/components/ui/label";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
@@ -16,6 +17,10 @@ type Account = { id: string; name: string; color?: string };
 
 export function TransferForm({ accounts, editingTx, onDone }: { accounts: Account[]; editingTx?: any | null; onDone?: () => void }) {
   const { ownerUid } = useAuth();
+  const fromSelId = useId();
+  const toSelId = useId();
+  const dateId = useId();
+  const amountId = useId();
   const [fromId, setFromId] = useState("");
   const [toId, setToId] = useState("");
   const [amount, setAmount] = useState("");
@@ -88,9 +93,9 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
     <div className="grid gap-3">
       <div className="flex items-end justify-between gap-3">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Счет откуда</label>
+          <Label htmlFor={fromSelId}>Счет откуда</Label>
           <Select value={fromId} onValueChange={setFromId}>
-            <SelectTrigger className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={fromSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
@@ -101,9 +106,9 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
           </Select>
         </div>
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Счет куда</label>
+          <Label htmlFor={toSelId}>Счет куда</Label>
           <Select value={toId} onValueChange={setToId}>
-            <SelectTrigger className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={toSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
@@ -114,15 +119,15 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
           </Select>
         </div>
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Дата</label>
-          <DatePicker value={date} onChange={setDate} />
+          <Label htmlFor={dateId}>Дата</Label>
+          <DatePicker value={date} onChange={setDate} triggerId={dateId} />
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Сумма</label>
-          <Input className="w-40" type="text" placeholder="0.0" value={amount} onChange={handleAmountChange} onBlur={handleAmountBlur} />
+          <Label htmlFor={amountId}>Сумма</Label>
+          <Input id={amountId} className="w-40" type="text" placeholder="0.0" value={amount} onChange={handleAmountChange} onBlur={handleAmountBlur} />
         </div>
         <div className="grid gap-1 flex-1 min-w-56">
           <label className="text-sm font-medium">Комментарий</label>

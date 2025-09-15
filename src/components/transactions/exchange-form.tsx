@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { DatePicker } from "@/components/date-picker";
+import { Label } from "@/components/ui/label";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
@@ -19,6 +20,13 @@ type Currency = { id: string; name: string };
 
 export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { accounts: Account[]; currencies: Currency[]; editingTx?: any | null; onDone?: () => void }) {
   const { ownerUid } = useAuth();
+  const accSelId = useId();
+  const dateId = useId();
+  const fromCurSelId = useId();
+  const fromAmtId = useId();
+  const toCurSelId = useId();
+  const toAmtId = useId();
+  const commentId = useId();
   const [accountId, setAccountId] = useState("");
   const [accountBalances, setAccountBalances] = useState<Balance[]>([]);
   const [fromCurrencyId, setFromCurrencyId] = useState("");
@@ -129,9 +137,9 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
     <div className="grid gap-3">
       <div className="flex items-end justify-between gap-3">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Счет</label>
+          <Label htmlFor={accSelId}>Счет</Label>
           <Select value={accountId} onValueChange={setAccountId}>
-            <SelectTrigger className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={accSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
@@ -142,47 +150,47 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
           </Select>
         </div>
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Дата</label>
-          <DatePicker value={date} onChange={setDate} />
+          <Label htmlFor={dateId}>Дата</Label>
+          <DatePicker value={date} onChange={setDate} triggerId={dateId} />
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Продали (валюта)</label>
+          <Label htmlFor={fromCurSelId}>Продали (валюта)</Label>
           <Select value={fromCurrencyId} onValueChange={setFromCurrencyId}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={fromCurSelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
               {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{currencyName(b.currencyId)}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Сколько продали</label>
-          <Input className="w-40" type="text" placeholder="0.0" value={amountFrom} onChange={handleAmountFromChange} onBlur={handleAmountFromBlur} />
+          <Label htmlFor={fromAmtId}>Сколько продали</Label>
+          <Input id={fromAmtId} className="w-40" type="text" placeholder="0.0" value={amountFrom} onChange={handleAmountFromChange} onBlur={handleAmountFromBlur} />
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Купили (валюта)</label>
+          <Label htmlFor={toCurSelId}>Купили (валюта)</Label>
           <Select value={toCurrencyId} onValueChange={setToCurrencyId}>
-            <SelectTrigger className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={toCurSelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
               {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{currencyName(b.currencyId)}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Сколько купили</label>
-          <Input className="w-40" type="text" placeholder="0.0" value={amountTo} onChange={handleAmountToChange} onBlur={handleAmountToBlur} />
+          <Label htmlFor={toAmtId}>Сколько купили</Label>
+          <Input id={toAmtId} className="w-40" type="text" placeholder="0.0" value={amountTo} onChange={handleAmountToChange} onBlur={handleAmountToBlur} />
         </div>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1 flex-1 min-w-56">
-          <label className="text-sm font-medium">Комментарий</label>
-          <Input placeholder="Опционально" value={comment} onChange={(e) => setComment(e.target.value)} />
+          <Label htmlFor={commentId}>Комментарий</Label>
+          <Input id={commentId} placeholder="Опционально" value={comment} onChange={(e) => setComment(e.target.value)} />
         </div>
       </div>
 

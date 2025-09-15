@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-export function DatePicker({ value, onChange }: { value: Date; onChange: (d: Date) => void }) {
+export function DatePicker({ value, onChange, triggerId }: { value: Date; onChange: (d: Date) => void; triggerId?: string }) {
   const [open, setOpen] = useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline">{value.toLocaleDateString()}</Button>
+        <Button id={triggerId} variant="outline">{value.toLocaleDateString()}</Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="p-2">
         <Calendar mode="single" selected={value} onSelect={(d) => d && (onChange(d), setOpen(false))} />
@@ -18,4 +18,3 @@ export function DatePicker({ value, onChange }: { value: Date; onChange: (d: Dat
     </Popover>
   );
 }
-

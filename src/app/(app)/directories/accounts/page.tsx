@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useId } from "react";
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Label } from "@/components/ui/label";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import {
@@ -37,6 +38,7 @@ export default function AccountsPage() {
   const [confirmAccount, setConfirmAccount] = useState<Account | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [pendingAdd, setPendingAdd] = useState(false);
+  const addAccountNameId = useId();
 
   useEffect(() => {
     if (!ownerUid) return;
@@ -96,8 +98,9 @@ export default function AccountsPage() {
 
   <div className="mt-6 flex items-end gap-2">
     <div className="grid gap-1 grow-1">
-      <label className="text-sm font-medium">Добавить счет</label>
+      <Label htmlFor={addAccountNameId}>Добавить счет</Label>
       <Input
+        id={addAccountNameId}
         placeholder="Название счета"
         value={newName}
         onChange={(e) => {
@@ -153,6 +156,10 @@ function AccountItem({
   onAskDelete: () => void;
 }) {
   const { ownerUid } = useAuth();
+  const editNameId = useId();
+  const colorId = useId();
+  const addCurSelId = useId();
+  const addAmtId = useId();
   const [serverBalances, setServerBalances] = useState<Balance[]>([]);
   const [drafts, setDrafts] = useState<{ id: string; currencyId: string; amount: string; isNew?: boolean; deleted?: boolean }[]>([]);
   const [adding, setAdding] = useState<{ currencyId: string; amount: string }>({ currencyId: "", amount: "0" });
@@ -330,12 +337,13 @@ function AccountItem({
       <div className="mt-4 grid justify-start gap-2">
         <div className="flex items-end gap-2">
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Название</label>
-            <Input className="max-w-xs" value={editName} onChange={(e) => setEditName(e.target.value)} />
+            <Label htmlFor={editNameId}>Название</Label>
+            <Input id={editNameId} className="max-w-xs" value={editName} onChange={(e) => setEditName(e.target.value)} />
           </div>
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Цвет</label>
+            <Label htmlFor={colorId}>Цвет</Label>
             <input
+              id={colorId}
               type="color"
               value={editColor}
               onChange={(e) => setEditColor(e.target.value)}
@@ -432,9 +440,9 @@ function AccountItem({
         ) : (
           <div className="flex items-end gap-2">
             <div className="grid gap-1">
-              <label className="text-sm font-medium">Валюта</label>
+              <Label htmlFor={addCurSelId}>Валюта</Label>
               <Select value={adding.currencyId} onValueChange={(v) => setAdding((s) => ({ ...s, currencyId: v }))}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger id={addCurSelId} className="w-48">
                   <SelectValue placeholder="Выберите валюту" />
                 </SelectTrigger>
                 <SelectContent>
@@ -445,8 +453,9 @@ function AccountItem({
               </Select>
             </div>
             <div className="grid gap-1">
-              <label className="text-sm font-medium">Остаток</label>
+              <Label htmlFor={addAmtId}>Остаток</Label>
               <Input
+                id={addAmtId}
                 className="w-40"
                 type="number"
                 value={adding.amount}
