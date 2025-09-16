@@ -12,8 +12,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
-
-type Account = { id: string; name: string; color?: string };
+import type { Account } from "@/types/entities";
 
 export function TransferForm({ accounts, editingTx, onDone }: { accounts: Account[]; editingTx?: any | null; onDone?: () => void }) {
   const { ownerUid } = useAuth();
@@ -99,7 +98,10 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
             <SelectContent>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
-                  <span className="font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
+                  <span className="flex items-center gap-2">
+                    {a.iconUrl ? <img src={a.iconUrl} alt="" className="h-4 w-4 object-contain" /> : null}
+                    <span className="font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -112,7 +114,10 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
             <SelectContent>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
-                  <span className="font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
+                  <span className="flex items-center gap-2">
+                    {a.iconUrl ? <img src={a.iconUrl} alt="" className="h-4 w-4 object-contain" /> : null}
+                    <span className="font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>

@@ -10,8 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { ConfirmDialog, InfoDialog } from "@/components/ui/confirm-dialog";
-
-type Category = { id: string; name: string; parentId?: string | null };
+import type { Category } from "@/types/entities";
 
 export default function CategoriesPage() {
   const ROOT = "__root__";

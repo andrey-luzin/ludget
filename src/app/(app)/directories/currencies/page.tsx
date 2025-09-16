@@ -22,8 +22,7 @@ import {
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
-
-type Currency = { id: string; name: string };
+import type { Currency } from "@/types/entities";
 
 export default function CurrenciesPage() {
   const { ownerUid } = useAuth();

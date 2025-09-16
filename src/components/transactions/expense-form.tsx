@@ -12,11 +12,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from "firebase/firestore";
 import { sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
-
-type Account = { id: string; name: string; color?: string };
-type Balance = { id: string; currencyId: string; amount: number };
-type Currency = { id: string; name: string };
-type Category = { id: string; name: string; parentId?: string | null };
+import type { Account, Balance, Category, Currency } from "@/types/entities";
 
 export function ExpenseForm({ accounts, currencies, categories, editingTx, onDone }: {
   accounts: Account[];
@@ -141,7 +137,10 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
             <SelectContent>
               {accounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
-                  <span className="font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
+                  <span className="flex items-center gap-2">
+                    {a.iconUrl ? <img src={a.iconUrl} alt="" className="h-4 w-4 object-contain" /> : null}
+                    <span className="font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
+                  </span>
                 </SelectItem>
               ))}
             </SelectContent>

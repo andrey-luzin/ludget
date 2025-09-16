@@ -11,11 +11,7 @@ import { IncomeForm } from "@/components/transactions/income-form";
 import { TransferForm } from "@/components/transactions/transfer-form";
 import { ExchangeForm } from "@/components/transactions/exchange-form";
 import { TransactionsList } from "@/components/transactions/transactions-list";
-
-type Account = { id: string; name: string; color?: string };
-type Currency = { id: string; name: string };
-type Category = { id: string; name: string; parentId?: string | null };
-type Source = { id: string; name: string; parentId?: string | null };
+import type { Account, Category, Currency, Source } from "@/types/entities";
 
 export default function TransactionsPage() {
   const { ownerUid } = useAuth();
@@ -37,7 +33,7 @@ export default function TransactionsPage() {
       (snap) => setAccounts(
         snap.docs.map((d) => {
           const data = d.data() as any;
-          return { id: d.id, name: data.name, color: data.color } as Account;
+          return { id: d.id, name: data.name, color: data.color, iconUrl: data.iconUrl } as Account;
         })
       )
     );

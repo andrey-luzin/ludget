@@ -24,10 +24,8 @@ import {
   where,
 } from "firebase/firestore";
 import { Collections, SubCollections } from "@/types/collections";
-
-type Currency = { id: string; name: string };
-type Balance = { id: string; currencyId: string; amount: number };
-type Account = { id: string; name: string; color?: string };
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import type { Account, Balance, Currency } from "@/types/entities";
 
 export default function AccountsPage() {
   const { ownerUid } = useAuth();
@@ -46,7 +44,7 @@ export default function AccountsPage() {
       setAccounts(
         snap.docs.map((d) => {
           const data = d.data() as any;
-          return { id: d.id, name: data.name, color: data.color } as Account;
+          return { id: d.id, name: data.name, color: data.color, iconUrl: data.iconUrl } as Account;
         })
       );
     });
@@ -169,6 +167,48 @@ function AccountItem({
   const [showAddForm, setShowAddForm] = useState(false);
   const [editName, setEditName] = useState(account.name);
   const [editColor, setEditColor] = useState<string>(account.color || "#000000");
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const iconFileId = useId();
+
+  const handleIconFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !ownerUid) return;
+    try {
+      setUploadingIcon(true);
+      const storage = getStorage();
+      const ext = (() => {
+        const map: Record<string, string> = {
+          "image/svg+xml": ".svg",
+          "image/png": ".png",
+          "image/webp": ".webp",
+          "image/jpeg": ".jpg",
+        };
+        return map[file.type] || "";
+      })();
+      const path = `icons/${ownerUid}/${account.id}${ext || ''}`;
+      const r = ref(storage, path);
+      await uploadBytes(r, file, { contentType: file.type, cacheControl: "public,max-age=31536000,immutable" });
+      const url = await getDownloadURL(r);
+      await updateDoc(doc(db, Collections.Accounts, account.id), { iconUrl: url } as any);
+    } finally {
+      setUploadingIcon(false);
+      // reset input so same file can be re-selected
+      e.currentTarget.value = "";
+    }
+  };
+
+  const handleIconDelete = async () => {
+    if (!ownerUid || !account.iconUrl) return;
+    try {
+      setUploadingIcon(true);
+      const storage = getStorage();
+      const fileRef = ref(storage, account.iconUrl);
+      await deleteObject(fileRef).catch(() => undefined);
+    } finally {
+      await updateDoc(doc(db, Collections.Accounts, account.id), { iconUrl: null } as any);
+      setUploadingIcon(false);
+    }
+  };
 
   // When opening editor, sync name and color
   useEffect(() => {
@@ -318,7 +358,12 @@ function AccountItem({
   return (
     <div className="border rounded-md p-3">
       <div className="flex items-center gap-2">
-        <div className="text-base font-medium flex-1" style={{ color: account.color || undefined }}>{account.name}</div>
+        <div className="text-base font-medium flex-1 flex items-center gap-2" style={{ color: account.color || undefined }}>
+          {account.iconUrl ? (
+            <img src={account.iconUrl} alt="" className="h-5 w-5 rounded-sm object-contain" />
+          ) : null}
+          <span>{account.name}</span>
+        </div>
         <Button variant="secondary" onClick={() => setShowBalancesEditor((s) => !s)}>
           {showBalancesEditor ? "Свернуть" : "Править"}
         </Button>
@@ -379,6 +424,27 @@ function AccountItem({
               className="h-9 w-10 overflow-hidden rounded cursor-pointer border"
               title="Цвет заголовка"
             />
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor={iconFileId}>Иконка</Label>
+            <div className="flex items-center gap-3">
+              {account.iconUrl && (
+                <img src={account.iconUrl} alt="" className="h-8 w-8 rounded-sm object-contain border bg-background" />
+              )}
+              <Input
+                id={iconFileId}
+                type="file"
+                accept="image/svg+xml,image/png,image/webp,image/jpeg"
+                disabled={uploadingIcon}
+                onChange={handleIconFileChange}
+                className="max-w-xs"
+              />
+              {account.iconUrl ? (
+                <Button type="button" variant="ghost" size="sm" onClick={handleIconDelete} disabled={uploadingIcon}>
+                  Удалить
+                </Button>
+              ) : null}
+            </div>
           </div>
         </div>
         {visibleDrafts.map((b) => {

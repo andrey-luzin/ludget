@@ -12,13 +12,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
+import type { Account, Category, Currency, Source } from "@/types/entities";
 
 type TxType = "expense" | "income" | "transfer" | "exchange";
-
-type Account = { id: string; name: string; color?: string };
-type Currency = { id: string; name: string };
-type Category = { id: string; name: string };
-type Source = { id: string; name: string };
 
 type Tx = any;
 
@@ -46,6 +42,7 @@ export function TransactionsList({
 
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
   const accColor = (id: string) => accounts.find((a) => a.id === id)?.color;
+  const accIcon = (id: string) => accounts.find((a) => a.id === id)?.iconUrl;
   const curName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
   const catName = (id?: string) => categories?.find((c) => c.id === id)?.name ?? "";
   const srcName = (id?: string) => sources?.find((s) => s.id === id)?.name ?? "";
@@ -144,13 +141,22 @@ export function TransactionsList({
                       </>
                     ) : type === "transfer" ? (
                       <>
+                        {accIcon(it.fromAccountId) ? (
+                          <img src={accIcon(it.fromAccountId)!} alt="" className="inline-block h-4 w-4 mr-1 align-[-2px] object-contain" />
+                        ) : null}
                         <span className="font-medium" style={{ color: accColor(it.fromAccountId) || undefined }}>{accName(it.fromAccountId)}</span>
                         <span className="mx-1.5">→</span>
+                        {accIcon(it.toAccountId) ? (
+                          <img src={accIcon(it.toAccountId)!} alt="" className="inline-block h-4 w-4 mr-1 align-[-2px] object-contain" />
+                        ) : null}
                         <span className="font-medium" style={{ color: accColor(it.toAccountId) || undefined }}>{accName(it.toAccountId)}</span>
                         {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
                       </>
                     ) : (
                       <>
+                        {accIcon(it.accountId) ? (
+                          <img src={accIcon(it.accountId)!} alt="" className="inline-block h-4 w-4 mr-1 align-[-2px] object-contain" />
+                        ) : null}
                         <span className="font-medium" style={{ color: accColor(it.accountId) || undefined }}>{accName(it.accountId)}</span>
                         {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
                       </>
@@ -249,6 +255,9 @@ function AccountsMultiSelect({
                     checked={checked}
                     onCheckedChange={(v) => toggle(a.id, Boolean(v))}
                   />
+                  {a.iconUrl ? (
+                    <img src={a.iconUrl} alt="" className="h-4 w-4 object-contain" />
+                  ) : null}
                   <span className="text-sm font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
                 </label>
               );

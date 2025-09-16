@@ -10,8 +10,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, where } from "firebase/firestore";
 import { ConfirmDialog, InfoDialog } from "@/components/ui/confirm-dialog";
-
-type Source = { id: string; name: string; parentId?: string | null };
+import type { Source } from "@/types/entities";
 
 export default function IncomeSourcesPage() {
   const ROOT = "__root__";
