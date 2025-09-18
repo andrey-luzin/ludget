@@ -26,3 +26,14 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Icon Storage (Amazon S3)
+
+Account icons are uploaded to Amazon S3 under the `ludget/icons/{ownerUid}/{accountId}` prefix. Configure the following environment variables before running the app:
+
+- `AWS_S3_BUCKET` – name of the destination bucket.
+- `AWS_S3_REGION` – region of the bucket.
+- `AWS_S3_PUBLIC_URL` *(optional)* – base URL for serving files (defaults to the standard `https://{bucket}.s3.{region}.amazonaws.com`).
+- Standard AWS credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and, if required, `AWS_SESSION_TOKEN`).
+
+Ensure the bucket policy allows the application to upload and (optionally) read the files, and grant public read access if icons should be accessible without authentication.

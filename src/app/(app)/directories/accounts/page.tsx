@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useId } from "react";
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
+import { deleteAccountIcon, uploadAccountIcon } from "@/lib/account-icon-storage";
 import {
   addDoc,
   collection,
@@ -24,7 +25,6 @@ import {
   where,
 } from "firebase/firestore";
 import { Collections, SubCollections } from "@/types/collections";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import type { Account, Balance, Currency } from "@/types/entities";
 
 export default function AccountsPage() {
@@ -175,21 +175,10 @@ function AccountItem({
     if (!file || !ownerUid) return;
     try {
       setUploadingIcon(true);
-      const storage = getStorage();
-      const ext = (() => {
-        const map: Record<string, string> = {
-          "image/svg+xml": ".svg",
-          "image/png": ".png",
-          "image/webp": ".webp",
-          "image/jpeg": ".jpg",
-        };
-        return map[file.type] || "";
-      })();
-      const path = `icons/${ownerUid}/${account.id}${ext || ''}`;
-      const r = ref(storage, path);
-      await uploadBytes(r, file, { contentType: file.type, cacheControl: "public,max-age=31536000,immutable" });
-      const url = await getDownloadURL(r);
+      const { url } = await uploadAccountIcon(ownerUid, account.id, file);
       await updateDoc(doc(db, Collections.Accounts, account.id), { iconUrl: url } as any);
+    } catch (err) {
+      console.error("account icon upload failed", err);
     } finally {
       setUploadingIcon(false);
       // reset input so same file can be re-selected
@@ -201,9 +190,9 @@ function AccountItem({
     if (!ownerUid || !account.iconUrl) return;
     try {
       setUploadingIcon(true);
-      const storage = getStorage();
-      const fileRef = ref(storage, account.iconUrl);
-      await deleteObject(fileRef).catch(() => undefined);
+      await deleteAccountIcon({ url: account.iconUrl });
+    } catch (err) {
+      console.warn("Не удалось удалить иконку из S3", err);
     } finally {
       await updateDoc(doc(db, Collections.Accounts, account.id), { iconUrl: null } as any);
       setUploadingIcon(false);
@@ -507,8 +496,12 @@ function AccountItem({
             onClick={async () => {
               // Save name/color if changed
               const updates: any = {};
-              if (editName.trim() && editName.trim() !== account.name) updates.name = editName.trim();
-              if ((account.color || "#000000") !== editColor) updates.color = editColor;
+              if (editName.trim() && editName.trim() !== account.name) {
+                updates.name = editName.trim();
+              }
+              if ((account.color || "#000000") !== editColor) {
+                updates.color = editColor;
+              }
               if (Object.keys(updates).length) {
                 await updateDoc(doc(db, Collections.Accounts, account.id), updates);
               }
