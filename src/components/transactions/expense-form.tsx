@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { DatePicker } from "@/components/date-picker";
 import { Label } from "@/components/ui/label";
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where } from "firebase/firestore";
+import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where, updateDoc, doc } from "firebase/firestore";
 import { sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
 import type { Account, Balance, Category, Currency } from "@/types/entities";
 
@@ -97,7 +98,6 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
       return;
     }
     if (editingTx?.id) {
-      const { updateDoc, doc } = await import("firebase/firestore");
       await updateDoc(doc(db, Collections.Transactions, editingTx.id), {
         accountId,
         currencyId,
@@ -125,7 +125,55 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
     onDone?.();
   }
 
-  const categoriesFlat = useMemo(() => categories, [categories]);
+  const categoryOptions = useMemo(() => {
+    const byId = new Map(categories.map((c) => [c.id, c] as const));
+    const grouped = new Map<string | null, Category[]>();
+    for (const category of categories) {
+      const parentKey = category.parentId && byId.has(category.parentId) ? category.parentId : null;
+      const list = grouped.get(parentKey) ?? [];
+      list.push(category);
+      grouped.set(parentKey, list);
+    }
+    const sortCategories = (arr: Category[]) =>
+      [...arr].sort((a, b) => a.name.localeCompare(b.name, "ru", { sensitivity: "base" }));
+
+    const result: ComboboxOption[] = [];
+    const visited = new Set<string>();
+
+    const visit = (category: Category, depth: number) => {
+      if (visited.has(category.id)) {
+        return;
+      }
+      visited.add(category.id);
+      const parentName = category.parentId ? byId.get(category.parentId)?.name : undefined;
+      result.push({
+        value: category.id,
+        label: category.name,
+        keywords: parentName ? [parentName] : undefined,
+        style: depth > 0 ? { paddingLeft: Math.min(depth, 4) * 20 } : undefined,
+      });
+      const children = grouped.get(category.id);
+      if (children && children.length) {
+        for (const child of sortCategories(children)) {
+          visit(child, depth + 1);
+        }
+      }
+    };
+
+    const roots = sortCategories(grouped.get(null) ?? categories.filter((c) => !c.parentId || !byId.has(c.parentId)));
+    for (const root of roots) {
+      visit(root, 0);
+    }
+
+    // Handle any categories not reachable due to broken parent references
+    for (const category of categories) {
+      if (!visited.has(category.id)) {
+        visit(category, 0);
+      }
+    }
+
+    return result;
+  }, [categories]);
 
   return (
     <div className="grid gap-3">
@@ -171,16 +219,15 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <Label htmlFor={categorySelId}>Категория</Label>
-          <Select value={categoryId} onValueChange={setCategoryId}>
-            <SelectTrigger id={categorySelId} className="w-64"><SelectValue placeholder="Выберите" /></SelectTrigger>
-            <SelectContent>
-              {categoriesFlat.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  <span className={c.parentId ? "ml-4" : undefined}>{c.name}</span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            id={categorySelId}
+            value={categoryId}
+            onChange={setCategoryId}
+            options={categoryOptions}
+            placeholder="Выберите"
+            searchPlaceholder="Поиск категории"
+            triggerClassName="w-64 justify-between"
+          />
         </div>
         <div className="grid gap-1 flex-1 min-w-56">
           <Label htmlFor={commentId}>Комментарий</Label>
