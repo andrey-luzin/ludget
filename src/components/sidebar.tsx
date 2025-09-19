@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -9,10 +11,15 @@ const navItems = [
   { href: "/", label: "Транзакции", emoji: "🧾" },
 ];
 
+const settingsItems = [
+  { href: "/settings/sharing", label: "Совместное использование", emoji: "👥" },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useAuth();
+  const [settingsOpen, setSettingsOpen] = useState(true);
 
   async function handleLogout() {
     await signOut();
@@ -93,6 +100,41 @@ export default function Sidebar() {
             <span aria-hidden>💼</span>
             <span>Источники</span>
           </Link>
+        </div>
+        <div className="ml-1.5 flex flex-col gap-1">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60"
+            onClick={() => setSettingsOpen((v) => !v)}
+          >
+            <span className="flex items-center gap-2">
+              <span aria-hidden>⚙️</span>
+              <span>Настройки</span>
+            </span>
+            {settingsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
+          {settingsOpen ? (
+            <div className="ml-2 flex flex-col gap-1">
+              {settingsItems.map((item) => {
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={
+                      "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors " +
+                      (active
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "hover:bg-sidebar-accent/60")
+                    }
+                  >
+                    <span aria-hidden>{item.emoji}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : null}
         </div>
       </nav>
       <div className="mt-auto pt-4">

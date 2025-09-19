@@ -28,7 +28,7 @@ import { Collections, SubCollections } from "@/types/collections";
 import type { Account, Balance, Currency } from "@/types/entities";
 
 export default function AccountsPage() {
-  const { ownerUid } = useAuth();
+  const { ownerUid, userUid } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [newName, setNewName] = useState("");
   const [addAccountError, setAddAccountError] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export default function AccountsPage() {
       setAccounts(
         snap.docs.map((d) => {
           const data = d.data() as any;
-          return { id: d.id, name: data.name, color: data.color, iconUrl: data.iconUrl } as Account;
+          return { id: d.id, name: data.name, color: data.color, iconUrl: data.iconUrl, createdBy: data.createdBy } as Account;
         })
       );
     });
@@ -66,7 +66,12 @@ export default function AccountsPage() {
     }
     setPendingAdd(true);
     try {
-      await addDoc(collection(db, Collections.Accounts), { name: newName.trim(), createdAt: serverTimestamp(), ownerUid });
+      await addDoc(collection(db, Collections.Accounts), {
+        name: newName.trim(),
+        createdAt: serverTimestamp(),
+        ownerUid,
+        createdBy: userUid ?? ownerUid,
+      });
       setNewName("");
       setAddAccountError(null);
     } finally {

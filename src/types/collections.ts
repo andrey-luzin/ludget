@@ -4,6 +4,7 @@ export enum Collections {
   Categories = "categories",
   IncomeSources = "incomeSources",
   Transactions = "transactions",
+  UserProfiles = "userProfiles",
 }
 
 export enum SubCollections {

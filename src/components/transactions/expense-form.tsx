@@ -22,7 +22,7 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
   editingTx?: any | null;
   onDone?: () => void;
 }) {
-  const { ownerUid } = useAuth();
+  const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
   const accSelId = useId();
   const dateId = useId();
   const amountId = useId();
@@ -39,12 +39,20 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
   const [error, setError] = useState<string | null>(null);
   const currencyName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
 
-  // default account
+  const visibleAccounts = useMemo(() => {
+    if (!showOnlyMyAccounts || !userUid) return accounts;
+    return accounts.filter((acc) => (acc.createdBy ?? ownerUid) === userUid);
+  }, [accounts, showOnlyMyAccounts, userUid, ownerUid]);
+
   useEffect(() => {
-    if (!accountId && accounts.length > 0) {
-      setAccountId(accounts[0].id);
+    if (visibleAccounts.length === 0) {
+      if (accountId) setAccountId("");
+      return;
     }
-  }, [accounts]);
+    if (!accountId || !visibleAccounts.some((acc) => acc.id === accountId)) {
+      setAccountId(visibleAccounts[0].id);
+    }
+  }, [visibleAccounts, accountId]);
 
   // Prefill from editingTx
   useEffect(() => {
@@ -183,7 +191,7 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
           <Select value={accountId} onValueChange={setAccountId}>
             <SelectTrigger id={accSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accounts.map((a) => (
+              {visibleAccounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   <span className="flex items-center gap-2">
                     {a.iconUrl ? <img src={a.iconUrl} alt="" className="h-4 w-4 object-contain" /> : null}

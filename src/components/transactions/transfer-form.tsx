@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useId } from "react";
+import { useEffect, useMemo, useState, useId } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
 import type { Account } from "@/types/entities";
 
 export function TransferForm({ accounts, editingTx, onDone }: { accounts: Account[]; editingTx?: any | null; onDone?: () => void }) {
-  const { ownerUid } = useAuth();
+  const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
   const fromSelId = useId();
   const toSelId = useId();
   const dateId = useId();
@@ -28,12 +28,24 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
   const [error, setError] = useState<string | null>(null);
 
   // default accounts
+  const visibleAccounts = useMemo(() => {
+    if (!showOnlyMyAccounts || !userUid) return accounts;
+    return accounts.filter((acc) => (acc.createdBy ?? ownerUid) === userUid);
+  }, [accounts, showOnlyMyAccounts, userUid, ownerUid]);
+
   useEffect(() => {
-    if (!fromId && accounts.length > 0) {
-      setFromId(accounts[0].id);
-      setToId(accounts[1]?.id || accounts[0].id);
+    if (visibleAccounts.length === 0) {
+      if (fromId) setFromId("");
+      if (toId) setToId("");
+      return;
     }
-  }, [accounts]);
+    if (!fromId || !visibleAccounts.some((acc) => acc.id === fromId)) {
+      setFromId(visibleAccounts[0].id);
+    }
+    if (!toId || !visibleAccounts.some((acc) => acc.id === toId)) {
+      setToId(visibleAccounts[Math.min(1, visibleAccounts.length - 1)].id);
+    }
+  }, [visibleAccounts, fromId, toId]);
 
   useEffect(() => {
     if (editingTx) {
@@ -96,7 +108,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
           <Select value={fromId} onValueChange={setFromId}>
             <SelectTrigger id={fromSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accounts.map((a) => (
+              {visibleAccounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   <span className="flex items-center gap-2">
                     {a.iconUrl ? <img src={a.iconUrl} alt="" className="h-4 w-4 object-contain" /> : null}
@@ -112,7 +124,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
           <Select value={toId} onValueChange={setToId}>
             <SelectTrigger id={toSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accounts.map((a) => (
+              {visibleAccounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
                   <span className="flex items-center gap-2">
                     {a.iconUrl ? <img src={a.iconUrl} alt="" className="h-4 w-4 object-contain" /> : null}

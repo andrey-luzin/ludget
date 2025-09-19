@@ -33,7 +33,7 @@ export default function TransactionsPage() {
       (snap) => setAccounts(
         snap.docs.map((d) => {
           const data = d.data() as any;
-          return { id: d.id, name: data.name, color: data.color, iconUrl: data.iconUrl } as Account;
+          return { id: d.id, name: data.name, color: data.color, iconUrl: data.iconUrl, createdBy: data.createdBy } as Account;
         })
       )
     );

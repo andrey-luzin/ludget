@@ -33,7 +33,7 @@ export function TransactionsList({
   sources?: Source[];
   onEdit?: (tx: Tx) => void;
 }) {
-  const { ownerUid } = useAuth();
+  const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
   const [items, setItems] = useState<Tx[]>([]);
   const [accountFilter, setAccountFilter] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
@@ -46,6 +46,22 @@ export function TransactionsList({
   const curName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
   const catName = (id?: string) => categories?.find((c) => c.id === id)?.name ?? "";
   const srcName = (id?: string) => sources?.find((s) => s.id === id)?.name ?? "";
+
+  const accountOptions = useMemo(() => {
+    if (!showOnlyMyAccounts || !userUid) return accounts;
+    return accounts.filter((acc) => (acc.createdBy ?? ownerUid) === userUid);
+  }, [accounts, showOnlyMyAccounts, userUid, ownerUid]);
+
+  useEffect(() => {
+    const allowedIds = new Set(accountOptions.map((a) => a.id));
+    setAccountFilter((prev) => {
+      const next = prev.filter((id) => allowedIds.has(id));
+      if (next.length === prev.length && next.every((id, idx) => id === prev[idx])) {
+        return prev;
+      }
+      return next;
+    });
+  }, [accountOptions]);
 
   useEffect(() => {
     if (!ownerUid) {
@@ -108,7 +124,7 @@ export function TransactionsList({
         <div className="grid gap-1">
           <Label htmlFor={accFilterId}>Фильтр по счету</Label>
           <AccountsMultiSelect
-            accounts={accounts}
+            accounts={accountOptions}
             value={accountFilter}
             onChange={setAccountFilter}
             triggerId={accFilterId}

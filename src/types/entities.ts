@@ -3,6 +3,7 @@ export type Account = {
   name: string;
   color?: string;
   iconUrl?: string;
+  createdBy?: string | null;
 };
 
 export type Balance = {
