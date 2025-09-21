@@ -43,7 +43,7 @@ export default function SharingSettingsPage() {
             disabled={profileLoading || saving}
             onCheckedChange={(checked) => setValue(Boolean(checked))}
           />
-          <div className="space-y-1">
+          <div className="space-y-1 inline-flex flex-col">
             <Label htmlFor="show-own-accounts">Показывать только мои счета</Label>
             <p className="text-sm text-muted-foreground max-w-lg">
               Когда включено, в выпадающих списках будет показан только список счетов, созданных вами.

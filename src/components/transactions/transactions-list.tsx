@@ -39,6 +39,13 @@ export function TransactionsList({
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const accFilterId = useId();
   const dateFilterId = useId();
+  const hasFilters =
+    accountFilter.length > 0 || Boolean(dateRange?.from || dateRange?.to);
+
+  const resetFilters = () => {
+    setAccountFilter([]);
+    setDateRange({});
+  };
 
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name ?? id;
   const accColor = (id: string) => accounts.find((a) => a.id === id)?.color;
@@ -135,6 +142,17 @@ export function TransactionsList({
           <Label htmlFor={dateFilterId}>Период</Label>
           <DateRangePicker value={dateRange} onChange={setDateRange} triggerId={dateFilterId} />
         </div>
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="ml-auto"
+          disabled={!hasFilters}
+          onClick={resetFilters}
+        >
+          Сбросить фильтры
+        </Button>
       </div>
 
       <div className="grid gap-4">
