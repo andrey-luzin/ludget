@@ -12,7 +12,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where, updateDoc, doc } from "firebase/firestore";
-import { sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
+import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
 import type { Account, Balance, Category, Currency } from "@/types/entities";
 
 export function ExpenseForm({ accounts, currencies, categories, editingTx, onDone }: {
@@ -91,27 +91,24 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     setAmount(sanitizeMoneyInput(e.target.value));
-    // setAmount(e.target.value);
   }
-  function handleAmountBlur() {
-    const n = Number(amount.replace(/,/g, "."));
-    if (!isNaN(n)) {
-      const v = roundMoneyAmount(n);
-      setAmount(String(v));
-    }
-  }
-
   async function submit() {
     if (!accountId || !currencyId || !categoryId || !amount.trim()) {
       setError("Заполните обязательные поля.");
       return;
     }
+    const evaluated = evaluateAmountExpression(amount);
+    if (evaluated == null) {
+      setError("Введите корректное выражение суммы.");
+      return;
+    }
+    const normalizedAmount = Number(roundMoneyAmount(evaluated).toFixed(2));
     if (editingTx?.id) {
       await updateDoc(doc(db, Collections.Transactions, editingTx.id), {
         accountId,
         currencyId,
         categoryId,
-        amount: Number(amount.replace(/,/g, ".")),
+        amount: normalizedAmount,
         comment: comment || null,
         date,
       } as any);
@@ -121,7 +118,7 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
         accountId,
         currencyId,
         categoryId,
-        amount: Number(amount.replace(/,/g, ".")),
+        amount: normalizedAmount,
         comment: comment || null,
         date,
         ownerUid,
@@ -220,7 +217,7 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <Label htmlFor={amountId}>Сумма</Label>
-          <Input id={amountId} className="w-40" type="text" placeholder="0.0" value={amount} onChange={handleAmountChange} onBlur={handleAmountBlur} />
+          <Input id={amountId} className="w-40" type="text" placeholder="0.0" value={amount} onChange={handleAmountChange} />
         </div>
         <div className="grid gap-1">
           <Label htmlFor={currencySelId}>Валюта</Label>

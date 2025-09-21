@@ -11,7 +11,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
 import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from "firebase/firestore";
-import { sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
+import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
 import type { Account, Balance, Currency } from "@/types/entities";
 
 export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { accounts: Account[]; currencies: Currency[]; editingTx?: any | null; onDone?: () => void }) {
@@ -90,16 +90,8 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
   function handleAmountFromChange(e: React.ChangeEvent<HTMLInputElement>) {
     setAmountFrom(sanitizeMoneyInput(e.target.value));
   }
-  function handleAmountFromBlur() {
-    const n = Number(amountFrom.replace(/,/g, "."));
-    if (!isNaN(n)) setAmountFrom(String(roundMoneyAmount(n)));
-  }
   function handleAmountToChange(e: React.ChangeEvent<HTMLInputElement>) {
     setAmountTo(sanitizeMoneyInput(e.target.value));
-  }
-  function handleAmountToBlur() {
-    const n = Number(amountTo.replace(/,/g, "."));
-    if (!isNaN(n)) setAmountTo(String(roundMoneyAmount(n)));
   }
 
   async function submit() {
@@ -107,14 +99,22 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
       setError("Заполните обязательные поля.");
       return;
     }
+    const evaluatedFrom = evaluateAmountExpression(amountFrom);
+    const evaluatedTo = evaluateAmountExpression(amountTo);
+    if (evaluatedFrom == null || evaluatedTo == null) {
+      setError("Введите корректное выражение суммы.");
+      return;
+    }
+    const normalizedFrom = Number(roundMoneyAmount(evaluatedFrom).toFixed(2));
+    const normalizedTo = Number(roundMoneyAmount(evaluatedTo).toFixed(2));
     if (editingTx?.id) {
       const { updateDoc, doc } = await import("firebase/firestore");
       await updateDoc(doc(db, Collections.Transactions, editingTx.id), {
         accountId,
         fromCurrencyId,
         toCurrencyId,
-        amountFrom: Number(amountFrom.replace(/,/g, ".")),
-        amountTo: Number(amountTo.replace(/,/g, ".")),
+        amountFrom: normalizedFrom,
+        amountTo: normalizedTo,
         comment: comment || null,
         date,
       } as any);
@@ -124,8 +124,8 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
         accountId,
         fromCurrencyId,
         toCurrencyId,
-        amountFrom: Number(amountFrom.replace(/,/g, ".")),
-        amountTo: Number(amountTo.replace(/,/g, ".")),
+        amountFrom: normalizedFrom,
+        amountTo: normalizedTo,
         comment: comment || null,
         date,
         ownerUid,
@@ -176,7 +176,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
         </div>
         <div className="grid gap-1">
           <Label htmlFor={fromAmtId}>Сколько продали</Label>
-          <Input id={fromAmtId} className="w-40" type="text" placeholder="0.0" value={amountFrom} onChange={handleAmountFromChange} onBlur={handleAmountFromBlur} />
+          <Input id={fromAmtId} className="w-40" type="text" placeholder="0.0" value={amountFrom} onChange={handleAmountFromChange} />
         </div>
       </div>
 
@@ -192,7 +192,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
         </div>
         <div className="grid gap-1">
           <Label htmlFor={toAmtId}>Сколько купили</Label>
-          <Input id={toAmtId} className="w-40" type="text" placeholder="0.0" value={amountTo} onChange={handleAmountToChange} onBlur={handleAmountToBlur} />
+          <Input id={toAmtId} className="w-40" type="text" placeholder="0.0" value={amountTo} onChange={handleAmountToChange} />
         </div>
       </div>
 

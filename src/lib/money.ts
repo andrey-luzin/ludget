@@ -1,27 +1,25 @@
+// Allow digits, decimal separator, basic math operators, parentheses, whitespace
+const INPUT_ALLOWED_CHARS = /[^0-9+\-*/().\s]/g;
+
 export function sanitizeMoneyInput(raw: string): string {
-  const replaced = raw.replace(/,/g, ".");
-  // keep digits, optional leading -, and single dot
-  let out = "";
-  let dotSeen = false;
-  for (let i = 0; i < replaced.length; i++) {
-    const ch = replaced[i];
-    if (i === 0 && ch === "-") {
-      out += ch;
-      continue;
-    }
-    if (ch >= "0" && ch <= "9") {
-      out += ch;
-      continue;
-    }
-    if (ch === "." && !dotSeen) {
-      dotSeen = true;
-      out += ch;
-    }
+  return raw.replace(/,/g, ".").replace(INPUT_ALLOWED_CHARS, "");
+}
+
+export function evaluateAmountExpression(raw: string): number | null {
+  const cleaned = sanitizeMoneyInput(raw).trim();
+  if (!cleaned) {
+    return null;
   }
-  return out;
+  try {
+    const fn = new Function(`"use strict"; return (${cleaned});`);
+    const result = fn();
+    return typeof result === "number" && Number.isFinite(result) ? result : null;
+  } catch (error) {
+    console.warn("Failed to evaluate amount expression", { raw, error });
+    return null;
+  }
 }
 
 export function roundMoneyAmount(n: number): number {
   return Math.floor(n * 100) / 100;
 }
-

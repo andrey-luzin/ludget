@@ -11,7 +11,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
+import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
 import type { Account } from "@/types/entities";
 
 export function TransferForm({ accounts, editingTx, onDone }: { accounts: Account[]; editingTx?: any | null; onDone?: () => void }) {
@@ -61,25 +61,24 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     setAmount(sanitizeMoneyInput(e.target.value));
   }
-  function handleAmountBlur() {
-    const n = Number(amount.replace(/,/g, "."));
-    if (!isNaN(n)) {
-      const v = roundMoneyAmount(n);
-      setAmount(String(v));
-    }
-  }
 
   async function submit() {
     if (!fromId || !toId || !amount.trim()) {
       setError("Заполните обязательные поля.");
       return;
     }
+    const evaluated = evaluateAmountExpression(amount);
+    if (evaluated == null) {
+      setError("Введите корректное выражение суммы.");
+      return;
+    }
+    const normalizedAmount = Number(roundMoneyAmount(evaluated).toFixed(2));
     if (editingTx?.id) {
       const { updateDoc, doc } = await import("firebase/firestore");
       await updateDoc(doc(db, Collections.Transactions, editingTx.id), {
         fromAccountId: fromId,
         toAccountId: toId,
-        amount: Number(amount.replace(/,/g, ".")),
+        amount: normalizedAmount,
         comment: comment || null,
         date,
       } as any);
@@ -88,7 +87,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
         type: "transfer",
         fromAccountId: fromId,
         toAccountId: toId,
-        amount: Number(amount.replace(/,/g, ".")),
+        amount: normalizedAmount,
         comment: comment || null,
         date,
         ownerUid,
@@ -145,7 +144,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <Label htmlFor={amountId}>Сумма</Label>
-          <Input id={amountId} className="w-40" type="text" placeholder="0.0" value={amount} onChange={handleAmountChange} onBlur={handleAmountBlur} />
+          <Input id={amountId} className="w-40" type="text" placeholder="0.0" value={amount} onChange={handleAmountChange} />
         </div>
         <div className="grid gap-1 flex-1 min-w-56">
           <label className="text-sm font-medium">Комментарий</label>
