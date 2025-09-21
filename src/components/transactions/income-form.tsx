@@ -121,6 +121,57 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
     onDone?.();
   }
 
+  const compareSourceOrder = (a: Source, b: Source) => {
+    const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+    const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    return a.name.localeCompare(b.name, "ru", { sensitivity: "base" });
+  };
+
+  const orderedSources = useMemo(() => {
+    const byId = new Map(sources.map((source) => [source.id, source] as const));
+    const grouped = new Map<string | null, Source[]>();
+    for (const source of sources) {
+      const parentKey = source.parentId && byId.has(source.parentId) ? source.parentId : null;
+      const list = grouped.get(parentKey) ?? [];
+      list.push(source);
+      grouped.set(parentKey, list);
+    }
+    const sortSources = (arr: Source[]) => [...arr].sort(compareSourceOrder);
+
+    const result: Source[] = [];
+    const visited = new Set<string>();
+
+    const visit = (source: Source) => {
+      if (visited.has(source.id)) {
+        return;
+      }
+      visited.add(source.id);
+      result.push(source);
+      const children = grouped.get(source.id);
+      if (children && children.length) {
+        for (const child of sortSources(children)) {
+          visit(child);
+        }
+      }
+    };
+
+    const roots = sortSources(grouped.get(null) ?? sources.filter((source) => !source.parentId || !byId.has(source.parentId)));
+    for (const root of roots) {
+      visit(root);
+    }
+
+    for (const source of sources) {
+      if (!visited.has(source.id)) {
+        visit(source);
+      }
+    }
+
+    return result;
+  }, [sources]);
+
   return (
     <div className="grid gap-3">
       <div className="flex items-end justify-between gap-3">
@@ -168,9 +219,9 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
           <Select value={sourceId} onValueChange={setSourceId}>
             <SelectTrigger id={sourceSelId} className="w-64"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {sources.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  <span className={s.parentId ? "ml-4" : undefined}>{s.name}</span>
+              {orderedSources.map((source) => (
+                <SelectItem key={source.id} value={source.id}>
+                  <span className={source.parentId ? "ml-4" : undefined}>{source.name}</span>
                 </SelectItem>
               ))}
             </SelectContent>

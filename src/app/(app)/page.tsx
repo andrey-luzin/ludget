@@ -25,6 +25,15 @@ function compareCategories(a: Category, b: Category) {
   return a.name.localeCompare(b.name, "ru", { sensitivity: "base" });
 }
 
+function compareSources(a: Source, b: Source) {
+  const orderA = a.order ?? MAX_ORDER_VALUE;
+  const orderB = b.order ?? MAX_ORDER_VALUE;
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+  return a.name.localeCompare(b.name, "ru", { sensitivity: "base" });
+}
+
 export default function TransactionsPage() {
   const { ownerUid } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -76,6 +85,21 @@ export default function TransactionsPage() {
       await batch.commit();
     } catch (err) {
       console.error("Failed to ensure categories order", err);
+    }
+  }, []);
+
+  const ensureSourcesOrder = useCallback(async (rootItems: Source[]) => {
+    if (!rootItems.length) {
+      return;
+    }
+    const batch = writeBatch(db);
+    rootItems.forEach((source, index) => {
+      batch.update(doc(db, Collections.IncomeSources, source.id), { order: index } as any);
+    });
+    try {
+      await batch.commit();
+    } catch (err) {
+      console.error("Failed to ensure income sources order", err);
     }
   }, []);
 
@@ -182,11 +206,30 @@ export default function TransactionsPage() {
     );
     const unsubSources = onSnapshot(
       query(collection(db, Collections.IncomeSources), where("ownerUid", "==", ownerUid), orderBy("name")),
-      (snap) => setSources(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }) as Source[]).flat())
+      (snap) => {
+        const mapped = snap.docs.map((d) => {
+          const data = d.data() as any;
+          return {
+            id: d.id,
+            name: data.name,
+            parentId: data.parentId ?? null,
+            order: typeof data.order === "number" ? data.order : undefined,
+          } as Source;
+        });
+        const rootSources = mapped.filter((source) => !source.parentId);
+        const missingRootOrder = rootSources.some((source) => source.order == null);
+        if (missingRootOrder) {
+          const normalized = [...rootSources]
+            .sort(compareSources)
+            .map((source, index) => ({ ...source, order: index }));
+          void ensureSourcesOrder(normalized);
+        }
+        setSources(mapped.sort(compareSources));
+      }
     );
 
     return () => { unsubAccounts(); unsubCurrencies(); unsubCategories(); unsubSources(); };
-  }, [ownerUid, ensureAccountsOrder, ensureCurrenciesOrder, ensureCategoriesOrder]);
+  }, [ownerUid, ensureAccountsOrder, ensureCurrenciesOrder, ensureCategoriesOrder, ensureSourcesOrder]);
 
   return (
     <div className="max-w-3xl">
