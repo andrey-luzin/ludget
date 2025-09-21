@@ -66,7 +66,7 @@ export default function Sidebar() {
             </Link>
           );
         })}
-        <div className="ml-1.5 flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <button
             type="button"
             className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60"

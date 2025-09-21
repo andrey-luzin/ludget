@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { PenLine, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +23,8 @@ export default function CategoriesPage() {
   const [pending, setPending] = useState(false);
   const [confirmDel, setConfirmDel] = useState<Category | null>(null);
   const [blocked, setBlocked] = useState<{ name: string; count: number } | null>(null);
+  const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
+  const [editPending, setEditPending] = useState(false);
 
   useEffect(() => {
     if (!ownerUid) {
@@ -85,6 +88,42 @@ export default function CategoriesPage() {
     setParentId(v);
   };
 
+  function startEdit(category: Category) {
+    setEditing({ id: category.id, name: category.name });
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+  }
+
+  const handleEditNameChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    setEditing((prev) => (prev ? { ...prev, name: e.target.value } : prev));
+  };
+
+  async function saveEdit() {
+    if (!editing) {
+      return;
+    }
+    const trimmed = editing.name.trim();
+    if (!trimmed) {
+      return;
+    }
+    setEditPending(true);
+    try {
+      await updateDoc(doc(db, Collections.Categories, editing.id), {
+        name: trimmed,
+      });
+      setEditing(null);
+    } finally {
+      setEditPending(false);
+    }
+  }
+
+  const handleEditSubmit: React.FormEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault();
+    void saveEdit();
+  };
+
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">Категории</h1>
@@ -120,18 +159,91 @@ export default function CategoriesPage() {
           const currentCategories = categories.filter((c) => c.parentId === r.id);
 
           return (
-            <div key={r.id} className="border rounded-md p-3">
-              <div className="font-medium flex items-center gap-2">
-                <span className="flex-1">{r.name}</span>
-                <Button variant="destructive" onClick={() => askDelete(r)}>Удалить</Button>
+            <div key={r.id} className="group rounded-md border p-3 transition-colors">
+              <div className="flex items-start gap-2">
+                {editing?.id === r.id ? (
+                  <form onSubmit={handleEditSubmit} className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                    <Input value={editing.name} onChange={handleEditNameChange} autoFocus placeholder="Название категории" />
+                    <div className="flex gap-2">
+                      <Button type="submit" size="sm" loading={editPending} disabled={!editing.name.trim()}>
+                        Сохранить
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={cancelEdit} disabled={editPending}>
+                        Отмена
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <span className="flex-1 font-medium">{r.name}</span>
+                    <div className="flex items-center gap-1 opacity-50 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Редактировать"
+                        onClick={() => startEdit(r)}
+                      >
+                        <PenLine className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Удалить"
+                        onClick={() => askDelete(r)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
               {
                 currentCategories?.length ?
-                <div className="mt-2 pl-4 grid gap-1">
+                <div className="mt-1 pl-4 grid gap-1">
                   {currentCategories.map((sc) => (
-                    <div key={sc.id} className="text-sm text-muted-foreground flex items-center gap-2">
-                      <span className="flex-1">— {sc.name}</span>
-                      <Button variant="ghost" onClick={() => askDelete(sc)}>Удалить</Button>
+                    <div
+                      key={sc.id}
+                      className="flex items-center gap-2 rounded-md py-0.5 text-sm text-muted-foreground"
+                    >
+                      {editing?.id === sc.id ? (
+                        <form onSubmit={handleEditSubmit} className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+                          <Input value={editing.name} onChange={handleEditNameChange} autoFocus placeholder="Название категории" />
+                          <div className="flex gap-2">
+                            <Button type="submit" size="sm" loading={editPending} disabled={!editing.name.trim()}>
+                              Сохранить
+                            </Button>
+                            <Button type="button" size="sm" variant="ghost" onClick={cancelEdit} disabled={editPending}>
+                              Отмена
+                            </Button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          <span className="flex-1">— {sc.name}</span>
+                          <div className="flex items-center gap-1 opacity-50 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              aria-label="Редактировать"
+                              onClick={() => startEdit(sc)}
+                            >
+                              <PenLine className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon"
+                              variant="ghost"
+                              aria-label="Удалить"
+                              onClick={() => askDelete(sc)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
