@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
@@ -23,6 +24,37 @@ export default function TransactionsPage() {
   const [editingIncome, setEditingIncome] = useState<any | null>(null);
   const [editingTransfer, setEditingTransfer] = useState<any | null>(null);
   const [editingExchange, setEditingExchange] = useState<any | null>(null);
+  const expenseFormRef = useRef<HTMLDivElement | null>(null);
+  const incomeFormRef = useRef<HTMLDivElement | null>(null);
+  const transferFormRef = useRef<HTMLDivElement | null>(null);
+  const exchangeFormRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToForm = (ref: RefObject<HTMLDivElement | null>) => {
+    if (!ref.current) {
+      return;
+    }
+    ref.current.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handleEditExpense = (tx: any) => {
+    setEditingExpense(tx);
+    scrollToForm(expenseFormRef);
+  };
+
+  const handleEditIncome = (tx: any) => {
+    setEditingIncome(tx);
+    scrollToForm(incomeFormRef);
+  };
+
+  const handleEditTransfer = (tx: any) => {
+    setEditingTransfer(tx);
+    scrollToForm(transferFormRef);
+  };
+
+  const handleEditExchange = (tx: any) => {
+    setEditingExchange(tx);
+    scrollToForm(exchangeFormRef);
+  };
 
   useEffect(() => {
     if (!ownerUid) {
@@ -66,23 +98,31 @@ export default function TransactionsPage() {
 
         <TabsContent value="expense">
           <h2 className="text-lg font-medium mb-3">Расход</h2>
-          <ExpenseForm accounts={accounts} currencies={currencies} categories={categories} editingTx={editingExpense} onDone={() => setEditingExpense(null)} />
-          <TransactionsList type="expense" accounts={accounts} currencies={currencies} categories={categories} onEdit={setEditingExpense} />
+          <div ref={expenseFormRef}>
+            <ExpenseForm accounts={accounts} currencies={currencies} categories={categories} editingTx={editingExpense} onDone={() => setEditingExpense(null)} />
+          </div>
+          <TransactionsList type="expense" accounts={accounts} currencies={currencies} categories={categories} onEdit={handleEditExpense} />
         </TabsContent>
         <TabsContent value="income">
           <h2 className="text-lg font-medium mb-3">Доход</h2>
-          <IncomeForm accounts={accounts} sources={sources} currencies={currencies} editingTx={editingIncome} onDone={() => setEditingIncome(null)} />
-          <TransactionsList type="income" accounts={accounts} currencies={currencies} sources={sources} onEdit={setEditingIncome} />
+          <div ref={incomeFormRef}>
+            <IncomeForm accounts={accounts} sources={sources} currencies={currencies} editingTx={editingIncome} onDone={() => setEditingIncome(null)} />
+          </div>
+          <TransactionsList type="income" accounts={accounts} currencies={currencies} sources={sources} onEdit={handleEditIncome} />
         </TabsContent>
         <TabsContent value="transfer">
           <h2 className="text-lg font-medium mb-3">Перемещение</h2>
-          <TransferForm accounts={accounts} editingTx={editingTransfer} onDone={() => setEditingTransfer(null)} />
-          <TransactionsList type="transfer" accounts={accounts} currencies={currencies} onEdit={setEditingTransfer} />
+          <div ref={transferFormRef}>
+            <TransferForm accounts={accounts} editingTx={editingTransfer} onDone={() => setEditingTransfer(null)} />
+          </div>
+          <TransactionsList type="transfer" accounts={accounts} currencies={currencies} onEdit={handleEditTransfer} />
         </TabsContent>
         <TabsContent value="exchange">
           <h2 className="text-lg font-medium mb-3">Обмен валют</h2>
-          <ExchangeForm accounts={accounts} currencies={currencies} editingTx={editingExchange} onDone={() => setEditingExchange(null)} />
-          <TransactionsList type="exchange" accounts={accounts} currencies={currencies} onEdit={setEditingExchange} />
+          <div ref={exchangeFormRef}>
+            <ExchangeForm accounts={accounts} currencies={currencies} editingTx={editingExchange} onDone={() => setEditingExchange(null)} />
+          </div>
+          <TransactionsList type="exchange" accounts={accounts} currencies={currencies} onEdit={handleEditExchange} />
         </TabsContent>
       </Tabs>
     </div>

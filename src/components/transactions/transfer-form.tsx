@@ -26,6 +26,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
   const [comment, setComment] = useState("");
   const [date, setDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
+  const submitLabel = editingTx ? "Сохранить" : "Добавить";
 
   // default accounts
   const visibleAccounts = useMemo(() => {
@@ -158,7 +159,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
         {editingTx ? (
           <Button variant="ghost" onClick={() => onDone?.()}>Отменить</Button>
         ) : null}
-        <Button onClick={submit}>Сохранить</Button>
+        <Button onClick={submit}>{submitLabel}</Button>
       </div>
     </div>
   );

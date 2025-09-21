@@ -33,6 +33,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
   const [date, setDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
   const currencyName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
+  const submitLabel = editingTx ? "Сохранить" : "Добавить";
 
   const visibleAccounts = useMemo(() => {
     if (!showOnlyMyAccounts || !userUid) return accounts;
@@ -208,7 +209,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
         {editingTx ? (
           <Button variant="ghost" onClick={() => onDone?.()}>Отменить</Button>
         ) : null}
-        <Button onClick={submit}>Сохранить</Button>
+        <Button onClick={submit}>{submitLabel}</Button>
       </div>
     </div>
   );
