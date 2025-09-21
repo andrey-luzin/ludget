@@ -4,6 +4,7 @@ export type Account = {
   color?: string;
   iconUrl?: string;
   createdBy?: string | null;
+  order?: number;
 };
 
 export type Balance = {
@@ -15,12 +16,14 @@ export type Balance = {
 export type Currency = {
   id: string;
   name: string;
+  order?: number;
 };
 
 export type Category = {
   id: string;
   name: string;
   parentId?: string | null;
+  order?: number;
 };
 
 export type Source = {

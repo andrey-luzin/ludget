@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState, useId } from "react";
+import { useCallback, useEffect, useState, useId } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { DndContext, DragEndEvent, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,13 +21,14 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
-  getDocs,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { Collections, SubCollections } from "@/types/collections";
 import type { Account, Balance, Currency } from "@/types/entities";
@@ -32,30 +38,98 @@ export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [newName, setNewName] = useState("");
   const [addAccountError, setAddAccountError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Record<string, string>>({});
   const [confirmAccount, setConfirmAccount] = useState<Account | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [pendingAdd, setPendingAdd] = useState(false);
   const addAccountNameId = useId();
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    })
+  );
+
+  const persistAccountOrder = useCallback(async (orderedAccounts: Account[]) => {
+    const batch = writeBatch(db);
+    orderedAccounts.forEach((acc, index) => {
+      batch.update(doc(db, Collections.Accounts, acc.id), { order: index } as any);
+    });
+    try {
+      await batch.commit();
+    } catch (err) {
+      console.error("Failed to persist accounts order", err);
+    }
+  }, []);
+
+  const handleAccountDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      return;
+    }
+    setAccounts((prev) => {
+      const oldIndex = prev.findIndex((item) => item.id === active.id);
+      const newIndex = prev.findIndex((item) => item.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) {
+        return prev;
+      }
+      const reordered = arrayMove(prev, oldIndex, newIndex).map((item, idx) => ({
+        ...item,
+        order: idx,
+      }));
+      void persistAccountOrder(reordered);
+      return reordered;
+    });
+  }, [persistAccountOrder]);
 
   useEffect(() => {
     if (!ownerUid) return;
-    const unsub = onSnapshot(query(collection(db, Collections.Accounts), where("ownerUid", "==", ownerUid), orderBy("name")), (snap) => {
-      setAccounts(
-        snap.docs.map((d) => {
+    const unsub = onSnapshot(
+      query(collection(db, Collections.Accounts), where("ownerUid", "==", ownerUid), orderBy("name")),
+      (snap) => {
+        const mapped = snap.docs.map((d) => {
           const data = d.data() as any;
-          return { id: d.id, name: data.name, color: data.color, iconUrl: data.iconUrl, createdBy: data.createdBy } as Account;
-        })
-      );
-    });
+          return {
+            id: d.id,
+            name: data.name,
+            color: data.color,
+            iconUrl: data.iconUrl,
+            createdBy: data.createdBy,
+            order: typeof data.order === "number" ? data.order : undefined,
+          } as Account;
+        });
+        const sorted = [...mapped].sort((a, b) => {
+          const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+          const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+          if (orderA !== orderB) return orderA - orderB;
+          return a.name.localeCompare(b.name, "ru", { sensitivity: "base" });
+        });
+        setAccounts(sorted);
+        const missingOrder = mapped.some((acc) => acc.order == null);
+        if (missingOrder) {
+          void persistAccountOrder(sorted.map((acc, idx) => ({ ...acc, order: idx })));
+        }
+      }
+    );
     return () => unsub();
-  }, [ownerUid]);
+  }, [ownerUid, persistAccountOrder]);
 
   useEffect(() => {
     if (!ownerUid) return;
-    const unsub = onSnapshot(query(collection(db, Collections.Currencies), where("ownerUid", "==", ownerUid), orderBy("name")), (snap) => {
-      setCurrencies(snap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name })));
-    });
+    const unsub = onSnapshot(
+      query(collection(db, Collections.Currencies), where("ownerUid", "==", ownerUid), orderBy("name")),
+      (snap) => {
+        const mapped = snap.docs.map((d) => {
+          const data = d.data() as any;
+          return { id: d.id, name: data.name, order: typeof data.order === "number" ? data.order : undefined } as Currency;
+        });
+        const sorted = [...mapped].sort((a, b) => {
+          const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+          const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+          if (orderA !== orderB) return orderA - orderB;
+          return a.name.localeCompare(b.name, "ru", { sensitivity: "base" });
+        });
+        setCurrencies(sorted);
+      }
+    );
     return () => unsub();
   }, [ownerUid]);
 
@@ -66,24 +140,23 @@ export default function AccountsPage() {
     }
     setPendingAdd(true);
     try {
+      const currentMaxOrder = accounts.reduce(
+        (max, acc) => Math.max(max, acc.order ?? -1),
+        -1
+      );
+      const nextOrder = currentMaxOrder + 1;
       await addDoc(collection(db, Collections.Accounts), {
         name: newName.trim(),
         createdAt: serverTimestamp(),
         ownerUid,
         createdBy: userUid ?? ownerUid,
+        order: nextOrder,
       });
       setNewName("");
       setAddAccountError(null);
     } finally {
       setPendingAdd(false);
     }
-  }
-
-  async function saveEdit(id: string) {
-    const name = editing[id]?.trim();
-    if (!name) return;
-    await updateDoc(doc(db, Collections.Accounts, id), { name });
-    setEditing((s) => ({ ...s, [id]: "" }));
   }
 
   async function deleteAccount(acc: Account) {
@@ -118,19 +191,24 @@ export default function AccountsPage() {
   </div>
       {addAccountError ? <Alert className="mt-2">{addAccountError}</Alert> : null}
 
-      <div className="mt-6 grid gap-3">
-        {accounts.map((acc) => (
-          <AccountItem
-            key={acc.id}
-            account={acc}
-            currencies={currencies}
-            editingName={editing[acc.id]}
-            setEditingName={(name) => setEditing((s) => ({ ...s, [acc.id]: name }))}
-            onSave={() => saveEdit(acc.id)}
-            onAskDelete={() => setConfirmAccount(acc)}
-          />
-        ))}
-      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleAccountDragEnd}
+      >
+        <SortableContext items={accounts.map((acc) => acc.id)} strategy={verticalListSortingStrategy}>
+          <div className="mt-6 grid gap-3">
+            {accounts.map((acc) => (
+              <SortableAccountItem
+                key={acc.id}
+                account={acc}
+                currencies={currencies}
+                onAskDelete={() => setConfirmAccount(acc)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       <ConfirmDialog
         open={Boolean(confirmAccount)}
@@ -143,21 +221,59 @@ export default function AccountsPage() {
   );
 }
 
+type AccountItemProps = {
+  account: Account;
+  currencies: Currency[];
+  onAskDelete: () => void;
+  dragHandle?: ReactNode;
+  isSorting?: boolean;
+};
+
+function SortableAccountItem(props: AccountItemProps) {
+  const { account, dragHandle: providedHandle, ...rest } = props;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: account.id,
+  });
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const handle = providedHandle ?? (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing -ml-1.5"
+      aria-label="Изменить порядок счета"
+      {...attributes}
+      {...listeners}
+    >
+      <GripVertical className="h-4 w-4" />
+    </Button>
+  );
+
+  return (
+    <div ref={setNodeRef} style={style} className={cn("relative", isDragging && "z-10")}
+    >
+      <AccountItem
+        {...rest}
+        account={account}
+        dragHandle={handle}
+        isSorting={isDragging}
+      />
+    </div>
+  );
+}
+
 function AccountItem({
   account,
   currencies,
-  editingName,
-  setEditingName,
-  onSave,
   onAskDelete,
-}: {
-  account: Account;
-  currencies: Currency[];
-  editingName?: string; // legacy, not used in new flow
-  setEditingName: (name: string) => void; // legacy, not used in new flow
-  onSave: () => void; // legacy, not used in new flow
-  onAskDelete: () => void;
-}) {
+  dragHandle,
+  isSorting,
+}: AccountItemProps) {
   const { ownerUid } = useAuth();
   const editNameId = useId();
   const colorId = useId();
@@ -350,8 +466,14 @@ function AccountItem({
   }
 
   return (
-    <div className="border rounded-md p-3">
+    <div
+      className={cn(
+        "border rounded-md p-3 bg-background",
+        isSorting && "shadow-lg ring-1 ring-primary/30"
+      )}
+    >
       <div className="flex items-center gap-2">
+        {!showBalancesEditor ? dragHandle : null}
         <div className="text-base font-medium flex-1 flex items-center gap-2" style={{ color: account.color || undefined }}>
           {account.iconUrl ? (
             <img src={account.iconUrl} alt="" className="h-5 w-5 rounded-sm object-contain" />

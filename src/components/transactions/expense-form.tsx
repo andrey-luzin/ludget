@@ -134,6 +134,15 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
     onDone?.();
   }
 
+  const compareCategoryOrder = (a: Category, b: Category) => {
+    const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+    const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) {
+      return orderA - orderB;
+    }
+    return a.name.localeCompare(b.name, "ru", { sensitivity: "base" });
+  };
+
   const categoryOptions = useMemo(() => {
     const byId = new Map(categories.map((c) => [c.id, c] as const));
     const grouped = new Map<string | null, Category[]>();
@@ -143,8 +152,7 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
       list.push(category);
       grouped.set(parentKey, list);
     }
-    const sortCategories = (arr: Category[]) =>
-      [...arr].sort((a, b) => a.name.localeCompare(b.name, "ru", { sensitivity: "base" }));
+    const sortCategories = (arr: Category[]) => [...arr].sort(compareCategoryOrder);
 
     const result: ComboboxOption[] = [];
     const visited = new Set<string>();

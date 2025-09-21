@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog, InfoDialog } from "@/components/ui/confirm-dialog";
@@ -11,18 +11,29 @@ import { Collections, SubCollections } from "@/types/collections";
 import {
   addDoc,
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
-  collectionGroup,
   getDocs,
-  where,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import type { Currency } from "@/types/entities";
+
+const MAX_ORDER_VALUE = Number.MAX_SAFE_INTEGER;
+
+function compareCurrencies(a: Currency, b: Currency) {
+  const orderA = a.order ?? MAX_ORDER_VALUE;
+  const orderB = b.order ?? MAX_ORDER_VALUE;
+  if (orderA !== orderB) {
+    return orderA - orderB;
+  }
+  return a.name.localeCompare(b.name, "ru", { sensitivity: "base" });
+}
 
 export default function CurrenciesPage() {
   const { ownerUid } = useAuth();
@@ -42,10 +53,23 @@ export default function CurrenciesPage() {
       orderBy("name")
     );
     const unsub = onSnapshot(q, (snap) => {
-      setCurrencies(snap.docs.map((d) => ({ id: d.id, name: (d.data() as any).name })));
+      setCurrencies(
+        snap.docs.map((d) => {
+          const data = d.data() as any;
+          return {
+            id: d.id,
+            name: data.name,
+            order: typeof data.order === "number" ? data.order : undefined,
+          } as Currency;
+        })
+      );
     });
     return () => unsub();
   }, [ownerUid]);
+
+  const orderedCurrencies = useMemo(() => {
+    return [...currencies].sort(compareCurrencies);
+  }, [currencies]);
 
   async function addCurrency() {
     if (!newName.trim()) {
@@ -54,10 +78,15 @@ export default function CurrenciesPage() {
     }
     setPendingAdd(true);
     try {
+      const nextOrder = orderedCurrencies.reduce(
+        (max, currency) => Math.max(max, currency.order ?? -1),
+        -1
+      ) + 1;
       await addDoc(collection(db, Collections.Currencies), {
         name: newName.trim(),
         createdAt: serverTimestamp(),
         ownerUid,
+        order: nextOrder,
       });
       setNewName("");
       setAddError(null);
@@ -67,10 +96,12 @@ export default function CurrenciesPage() {
   }
 
   async function saveEdit(id: string) {
-    const name = editing[id]?.trim();
-    if (!name) return;
-    await updateDoc(doc(db, Collections.Currencies, id), { name });
-    setEditing((s) => ({ ...s, [id]: "" }));
+    const draft = editing[id]?.trim();
+    if (!draft) {
+      return;
+    }
+    await updateDoc(doc(db, Collections.Currencies, id), { name: draft });
+    setEditing((state) => ({ ...state, [id]: "" }));
   }
 
   async function deleteCurrency(id: string) {
@@ -93,24 +124,21 @@ export default function CurrenciesPage() {
     }
   }
 
-  async function askDeleteCurrency(c: Currency) {
+  async function askDeleteCurrency(currency: Currency) {
     try {
-      // Check if this currency is used in any account balances of current user
       const q = query(
         collectionGroup(db, SubCollections.Balances),
         where("ownerUid", "==", ownerUid ?? "__none__"),
-        where("currencyId", "==", c.id)
+        where("currencyId", "==", currency.id)
       );
       const usedSnap = await getDocs(q);
-      
       if (usedSnap.size > 0) {
-        setBlocked({ name: c.name, count: usedSnap.size });
+        setBlocked({ name: currency.name, count: usedSnap.size });
         return;
       }
-      setConfirm({ id: c.id, name: c.name });
+      setConfirm({ id: currency.id, name: currency.name });
     } catch (e) {
-      // If check fails (rules/network), allow user to continue to confirmation
-      setConfirm({ id: c.id, name: c.name });
+      setConfirm({ id: currency.id, name: currency.name });
     }
   }
 
@@ -133,27 +161,43 @@ export default function CurrenciesPage() {
       {addError ? <Alert className="mt-2">{addError}</Alert> : null}
 
       <div className="mt-6 grid gap-2">
-        {currencies.map((c) => {
-          const isEditing = Boolean(editing[c.id]);
+        {orderedCurrencies.map((currency) => {
+          const draftName = editing[currency.id] ?? "";
+          const isEditing = Boolean(draftName);
           return (
-            <div key={c.id} className="flex items-center gap-2 border rounded-md p-2 pl-4">
+            <div key={currency.id} className="flex items-center gap-2 border rounded-md p-2 pl-4">
               {isEditing ? (
                 <Input
-                  value={editing[c.id]}
-                  onChange={(e) => setEditing((s) => ({ ...s, [c.id]: e.target.value }))}
+                  value={draftName}
+                  onChange={(e) => setEditing((state) => ({ ...state, [currency.id]: e.target.value }))}
                 />
               ) : (
-                <div className="flex-1">{c.name}</div>
+                <div className="flex-1">{currency.name}</div>
               )}
               {isEditing ? (
                 <>
-                  <Button variant="secondary" onClick={() => saveEdit(c.id)}>Сохранить</Button>
-                  <Button variant="ghost" onClick={() => setEditing((s) => ({ ...s, [c.id]: "" }))}>Отмена</Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => saveEdit(currency.id)}
+                    disabled={!draftName.trim()}
+                  >
+                    Сохранить
+                  </Button>
+                  <Button variant="ghost" onClick={() => setEditing((state) => ({ ...state, [currency.id]: "" }))}>
+                    Отмена
+                  </Button>
                 </>
               ) : (
                 <>
-                  <Button variant="outline" onClick={() => setEditing((s) => ({ ...s, [c.id]: c.name }))}>Редактировать</Button>
-                  <Button variant="destructive" onClick={() => askDeleteCurrency(c)}>Удалить</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditing((state) => ({ ...state, [currency.id]: currency.name }))}
+                  >
+                    Редактировать
+                  </Button>
+                  <Button variant="destructive" onClick={() => askDeleteCurrency(currency)}>
+                    Удалить
+                  </Button>
                 </>
               )}
             </div>
@@ -165,22 +209,22 @@ export default function CurrenciesPage() {
         open={Boolean(confirm)}
         title="Удалить валюту?"
         description={confirm ? `Валюта "${confirm.name}" будет удалена безвозвратно.` : undefined}
-        onConfirm={() => confirm ? deleteCurrency(confirm.id) : undefined}
-        onOpenChange={(o) => !o && setConfirm(null)}
+        onConfirm={() => (confirm ? deleteCurrency(confirm.id) : undefined)}
+        onOpenChange={(open) => !open && setConfirm(null)}
       />
       <InfoDialog
         open={Boolean(blocked)}
         title="Нельзя удалить валюту"
         description={
           blocked
-            ? (blocked.count === -1
+            ? blocked.count === -1
               ? `Не удалось проверить использование валюты "${blocked.name}".
 Возможно, не хватает прав на чтение. Попробуйте позже или обратитесь к администратору.`
               : `Валюта "${blocked.name}" используется в ${blocked.count} счете(ах).
-Удалите её из счетов прежде чем удалять валюту.`)
+Удалите её из счетов прежде чем удалять валюту.`
             : undefined
         }
-        onOpenChange={(o) => !o && setBlocked(null)}
+        onOpenChange={(open) => !open && setBlocked(null)}
       />
     </div>
   );
