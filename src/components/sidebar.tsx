@@ -1,25 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/auth-context";
 
 const navItems = [
   { href: "/", label: "Транзакции", emoji: "🧾" },
 ];
 
+const directoriesItems = [
+  { href: "/directories/accounts", label: "Счета", emoji: "🏦" },
+  { href: "/directories/currencies", label: "Валюты", emoji: "💱" },
+  { href: "/directories/categories", label: "Категории", emoji: "🏷️" },
+  { href: "/directories/income-sources", label: "Источники", emoji: "💼" },
+];
+
 const settingsItems = [
-  { href: "/settings/sharing", label: "Совместное использование", emoji: "👥" },
+  { href: "/settings/sharing", label: "Совместное использование" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { signOut } = useAuth();
-  const [settingsOpen, setSettingsOpen] = useState(true);
+  const [directoriesOpen, setDirectoriesOpen] = useState(true);
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
 
   async function handleLogout() {
     await signOut();
@@ -33,7 +49,7 @@ export default function Sidebar() {
       </div>
       <nav className="flex flex-col gap-1">
         {navItems.map((item) => {
-          const active = pathname === item.href;
+          const active = isActive(item.href);
           return (
             <Link
               key={item.href}
@@ -50,73 +66,26 @@ export default function Sidebar() {
             </Link>
           );
         })}
-        <div className="px-2 pt-3 pb-1 text-xs font-medium text-muted-foreground">Справочники</div>
-        <div className="ml-1.5 flex flex-col gap-1">
-          <Link
-            href="/directories/accounts"
-            className={
-              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors " +
-              (pathname === "/directories/accounts"
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "hover:bg-sidebar-accent/60")
-            }
-          >
-            <span aria-hidden>🏦</span>
-            <span>Счета</span>
-          </Link>
-          <Link
-            href="/directories/currencies"
-            className={
-              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors " +
-              (pathname === "/directories/currencies"
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "hover:bg-sidebar-accent/60")
-            }
-          >
-            <span aria-hidden>💱</span>
-            <span>Валюты</span>
-          </Link>
-          <Link
-            href="/directories/categories"
-            className={
-              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors " +
-              (pathname === "/directories/categories"
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "hover:bg-sidebar-accent/60")
-            }
-          >
-            <span aria-hidden>🏷️</span>
-            <span>Категории</span>
-          </Link>
-          <Link
-            href="/directories/income-sources"
-            className={
-              "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors " +
-              (pathname === "/directories/income-sources"
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "hover:bg-sidebar-accent/60")
-            }
-          >
-            <span aria-hidden>💼</span>
-            <span>Источники</span>
-          </Link>
-        </div>
         <div className="ml-1.5 flex flex-col gap-1">
           <button
             type="button"
             className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60"
-            onClick={() => setSettingsOpen((v) => !v)}
+            onClick={() => setDirectoriesOpen((v) => !v)}
           >
             <span className="flex items-center gap-2">
-              <span aria-hidden>⚙️</span>
-              <span>Настройки</span>
+              <span aria-hidden>📚</span>
+              <span>Справочники</span>
             </span>
-            {settingsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {directoriesOpen ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
           </button>
-          {settingsOpen ? (
+          {directoriesOpen ? (
             <div className="ml-2 flex flex-col gap-1">
-              {settingsItems.map((item) => {
-                const active = pathname === item.href;
+              {directoriesItems.map((item) => {
+                const active = isActive(item.href);
                 return (
                   <Link
                     key={item.href}
@@ -137,7 +106,46 @@ export default function Sidebar() {
           ) : null}
         </div>
       </nav>
-      <div className="mt-auto pt-4">
+      <div className="mt-auto pt-4 space-y-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full justify-between text-sm font-medium text-muted-foreground"
+            >
+              <span className="flex items-center gap-2">
+                <span aria-hidden>⚙️</span>
+                <span>Настройки</span>
+              </span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side="top"
+            align="end"
+            sideOffset={1}
+            className="w-60 border-muted-foreground/20 origin-bottom-left"
+          >
+            {settingsItems.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link
+                    href={item.href}
+                    className={
+                      "flex w-full items-center rounded-sm px-3 py-2 text-sm transition-colors " +
+                      (active
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                        : "text-muted-foreground hover:bg-sidebar-accent/60")
+                    }
+                  >
+                    {item.label}
+                  </Link>
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button variant="outline" className="w-full" onClick={handleLogout}>
           Выйти
         </Button>
