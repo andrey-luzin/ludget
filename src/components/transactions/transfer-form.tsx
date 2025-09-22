@@ -13,17 +13,19 @@ import { Collections } from "@/types/collections";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount, getAmountPreview } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import type { Account } from "@/types/entities";
+import type { Account, Currency } from "@/types/entities";
 
-export function TransferForm({ accounts, editingTx, onDone }: { accounts: Account[]; editingTx?: any | null; onDone?: () => void }) {
+export function TransferForm({ accounts, currencies, editingTx, onDone }: { accounts: Account[]; currencies: Currency[]; editingTx?: any | null; onDone?: () => void }) {
   const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
   const fromSelId = useId();
   const toSelId = useId();
   const dateId = useId();
   const amountId = useId();
+  const currencySelId = useId();
   const [fromId, setFromId] = useState("");
   const [toId, setToId] = useState("");
   const [amount, setAmount] = useState("");
+  const [currencyId, setCurrencyId] = useState("");
   const [comment, setComment] = useState("");
   const [date, setDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
@@ -55,17 +57,27 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
       setFromId(editingTx.fromAccountId || "");
       setToId(editingTx.toAccountId || "");
       setAmount(editingTx.amount != null ? String(editingTx.amount) : "");
+      setCurrencyId(editingTx.currencyId || "");
       setComment(editingTx.comment || "");
       setDate(editingTx.date?.toDate ? editingTx.date.toDate() : new Date(editingTx.date || Date.now()));
     }
   }, [editingTx]);
+
+  useEffect(() => {
+    if (editingTx?.currencyId) {
+      return;
+    }
+    if (!currencyId && currencies.length > 0) {
+      setCurrencyId(currencies[0].id);
+    }
+  }, [currencies, currencyId, editingTx]);
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     setAmount(sanitizeMoneyInput(e.target.value));
   }
 
   async function submit() {
-    if (!fromId || !toId || !amount.trim()) {
+    if (!fromId || !toId || !currencyId || !amount.trim()) {
       setError("Заполните обязательные поля.");
       return;
     }
@@ -80,6 +92,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
       await updateDoc(doc(db, Collections.Transactions, editingTx.id), {
         fromAccountId: fromId,
         toAccountId: toId,
+        currencyId,
         amount: normalizedAmount,
         comment: comment || null,
         date,
@@ -89,6 +102,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
         type: "transfer",
         fromAccountId: fromId,
         toAccountId: toId,
+        currencyId,
         amount: normalizedAmount,
         comment: comment || null,
         date,
@@ -97,6 +111,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
       });
     }
     setAmount("");
+    setCurrencyId(currencies[0]?.id ?? "");
     setComment("");
     setError(null);
     onDone?.();
@@ -104,7 +119,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
 
   return (
     <div className="grid gap-3">
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex items-end gap-3">
         <div className="grid gap-1">
           <Label htmlFor={fromSelId}>Счет откуда</Label>
           <Select value={fromId} onValueChange={setFromId}>
@@ -137,7 +152,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
             </SelectContent>
           </Select>
         </div>
-        <div className="grid gap-1">
+        <div className="grid gap-1 ml-auto">
           <Label htmlFor={dateId}>Дата</Label>
           <DatePicker value={date} onChange={setDate} triggerId={dateId} />
         </div>
@@ -149,7 +164,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
           <div className="relative">
             <Input
               id={amountId}
-              className={cn("w-50", amountPreview ? "pr-16" : undefined)}
+              className={cn("w-40", amountPreview ? "pr-16" : undefined)}
               type="text"
               placeholder="0.0"
               value={amount}
@@ -161,6 +176,19 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
               </span>
             ) : null}
           </div>
+        </div>
+        <div className="grid gap-1">
+          <Label htmlFor={currencySelId}>Валюта</Label>
+          <Select value={currencyId} onValueChange={setCurrencyId}>
+            <SelectTrigger id={currencySelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectContent>
+              {currencies.map((currency) => (
+                <SelectItem key={currency.id} value={currency.id}>
+                  {currency.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="grid gap-1 flex-1 min-w-56">
           <label className="text-sm font-medium">Комментарий</label>

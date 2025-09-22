@@ -25,6 +25,7 @@ export function TransactionsList({
   categories,
   sources,
   onEdit,
+  editingId,
 }: {
   type: TxType;
   accounts: Account[];
@@ -32,6 +33,7 @@ export function TransactionsList({
   categories?: Category[];
   sources?: Source[];
   onEdit?: (tx: Tx) => void;
+  editingId?: string | null;
 }) {
   const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
   const [items, setItems] = useState<Tx[]>([]);
@@ -210,8 +212,20 @@ export function TransactionsList({
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" onClick={() => onEdit?.(it)}>Редактировать</Button>
-                    <Button variant="destructive" onClick={() => handleDelete(it.id)}>Удалить</Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => onEdit?.(it)}
+                      disabled={editingId === it.id}
+                    >
+                      Редактировать
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleDelete(it.id)}
+                      disabled={editingId === it.id}
+                    >
+                      Удалить
+                    </Button>
                   </div>
                 </div>
               ))}
