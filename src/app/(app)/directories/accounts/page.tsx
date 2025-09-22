@@ -9,7 +9,6 @@ import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
@@ -277,15 +276,10 @@ function AccountItem({
   const { ownerUid } = useAuth();
   const editNameId = useId();
   const colorId = useId();
-  const addCurSelId = useId();
-  const addAmtId = useId();
   const [serverBalances, setServerBalances] = useState<Balance[]>([]);
-  const [drafts, setDrafts] = useState<{ id: string; currencyId: string; amount: string; isNew?: boolean; deleted?: boolean }[]>([]);
-  const [adding, setAdding] = useState<{ currencyId: string; amount: string }>({ currencyId: "", amount: "0" });
-  const [addError, setAddError] = useState<string | null>(null);
+  const [drafts, setDrafts] = useState<{ currencyId: string; amount: string; balanceId?: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [showBalancesEditor, setShowBalancesEditor] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
   const [editName, setEditName] = useState(account.name);
   const [editColor, setEditColor] = useState<string>(account.color || "#000000");
   const [uploadingIcon, setUploadingIcon] = useState(false);
@@ -342,7 +336,6 @@ function AccountItem({
           return { id: d.id, currencyId: String(data.currencyId), amount: Number(data.amount) } as Balance;
         });
         setServerBalances(list);
-        setDrafts(list.map((b) => ({ id: b.id, currencyId: b.currencyId, amount: String(b.amount) })));
       },
       (err) => {
         console.warn("balances listener error", err);
@@ -351,110 +344,86 @@ function AccountItem({
     return () => unsub();
   }, [account.id, ownerUid]);
 
-  async function addBalance() {
-    const currencyId = adding.currencyId;
-    const amount = Number(adding.amount || 0);
-    if (!currencyId) {
-      setAddError("Пожалуйста, выберите валюту перед добавлением.");
+  useEffect(() => {
+    if (!currencies.length) {
+      setDrafts([]);
       return;
     }
-    setDrafts((ds) => [
-      ...ds,
-      { id: `new-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, currencyId, amount: String(amount), isNew: true },
-    ]);
-    setAdding({ currencyId: "", amount: "0" });
-    setAddError(null);
-  }
+    setDrafts((prev) => {
+      const prevMap = new Map(prev.map((d) => [d.currencyId, d] as const));
+      const serverMap = new Map(serverBalances.map((b) => [b.currencyId, b] as const));
+      return currencies.map((currency) => {
+        const previous = prevMap.get(currency.id);
+        const server = serverMap.get(currency.id);
+        const amount = previous ? previous.amount : server ? String(server.amount) : "0";
+        return {
+          currencyId: currency.id,
+          amount,
+          balanceId: server?.id,
+        };
+      });
+    });
+  }, [currencies, serverBalances]);
 
-  // Immediate create in Firestore (used by outside add-currency block)
-  async function addBalanceImmediate(): Promise<boolean> {
-    const currencyId = adding.currencyId;
-    const amount = Number(adding.amount || 0);
-    if (!currencyId) {
-      setAddError("Пожалуйста, выберите валюту перед добавлением.");
-      return false;
-    }
-    // Prevent duplicates
-    if (serverBalances.some((b) => b.currencyId === currencyId)) {
-      setAddError("Эта валюта уже добавлена в счет.");
-      return false;
-    }
-    try {
-      await addDoc(collection(db, Collections.Accounts, account.id, SubCollections.Balances), {
-        currencyId,
-        amount,
-        createdAt: serverTimestamp(),
-        ownerUid,
-      } as any);
-      setAdding({ currencyId: "", amount: "0" });
-      setAddError(null);
-      return true;
-    } catch (e) {
-      setAddError("Не удалось добавить валюту. Попробуйте ещё раз.");
-      return false;
-    }
-  }
-
-  function updateDraft(id: string, patch: Partial<{ currencyId: string; amount: string }>) {
-    setDrafts((ds) => ds.map((d) => (d.id === id ? { ...d, ...patch } : d)));
-  }
-
-  function markDelete(id: string) {
-    setDrafts((ds) => ds.map((d) => (d.id === id ? { ...d, deleted: true } : d)));
+  function updateDraft(currencyId: string, amount: string) {
+    setDrafts((ds) => ds.map((d) => (d.currencyId === currencyId ? { ...d, amount } : d)));
   }
 
   function currencyLabel(id: string) {
     return currencies.find((c) => c.id === id)?.name ?? "—";
   }
 
-  const visibleDrafts = drafts.filter((d) => !d.deleted);
-  const hasDuplicates = (() => {
-    const map = new Map<string, number>();
-    for (const d of visibleDrafts) {
-      if (!d.currencyId) continue;
-      map.set(d.currencyId, (map.get(d.currencyId) || 0) + 1);
-    }
-    for (const [, cnt] of map) if (cnt > 1) return true;
-    return false;
-  })();
+  const serverBalanceMap = new Map(serverBalances.map((b) => [b.currencyId, b] as const));
+  const mergedBalances = currencies.map((currency) => {
+    const fromServer = serverBalanceMap.get(currency.id);
+    return {
+      currencyId: currency.id,
+      amount: fromServer ? Number(fromServer.amount) : 0,
+      id: fromServer?.id ?? currency.id,
+    };
+  });
+  const nonZeroBalances = mergedBalances.filter((b) => Number(b.amount) !== 0);
 
-  const isDirty = (() => {
-    if (drafts.some((d) => d.isNew || d.deleted)) return true;
-    const byId = new Map(serverBalances.map((b) => [b.id, b] as const));
-    for (const d of drafts) {
-      if (d.isNew || d.deleted) continue;
-      const s = byId.get(d.id);
-      if (!s) return true;
-      if (s.currencyId !== d.currencyId) return true;
-      if (String(s.amount) !== String(d.amount)) return true;
+  const balancesDirty = drafts.some((draft) => {
+    const server = serverBalanceMap.get(draft.currencyId);
+    const draftAmount = Number(draft.amount || 0);
+    if (!server) {
+      return draftAmount !== 0;
     }
-    return false;
-  })();
+    return Number(server.amount) !== draftAmount;
+  });
+  const nameDirty = editName.trim() !== account.name;
+  const colorDirty = (account.color || "#000000") !== editColor;
+  const canSave = balancesDirty || nameDirty || colorDirty;
 
   async function persist() {
-    if (hasDuplicates) return;
     setSaving(true);
     try {
-      const deletes = drafts.filter((d) => d.deleted && !d.isNew);
+      const updates = drafts.filter((draft) => {
+        if (!draft.balanceId) {
+          return false;
+        }
+        const server = serverBalanceMap.get(draft.currencyId);
+        if (!server) {
+          return true;
+        }
+        return Number(server.amount) !== Number(draft.amount || 0);
+      });
+
       await Promise.all(
-        deletes.map((d) => deleteDoc(doc(db, Collections.Accounts, account.id, SubCollections.Balances, d.id)))
+        updates.map((draft) =>
+          updateDoc(doc(db, Collections.Accounts, account.id, SubCollections.Balances, draft.balanceId as string), {
+            amount: Number(draft.amount || 0),
+          } as any)
+        )
       );
-      const updates = drafts.filter((d) => !d.isNew && !d.deleted);
+
+      const creates = drafts.filter((draft) => !draft.balanceId && Number(draft.amount || 0) !== 0);
       await Promise.all(
-        updates.map((d) => {
-          const amount = Number(d.amount || 0);
-          return updateDoc(doc(db, Collections.Accounts, account.id, SubCollections.Balances, d.id), {
-            currencyId: d.currencyId,
-            amount,
-          } as any);
-        })
-      );
-      const creates = drafts.filter((d) => d.isNew && !d.deleted);
-      await Promise.all(
-        creates.map((d) =>
+        creates.map((draft) =>
           addDoc(collection(db, Collections.Accounts, account.id, SubCollections.Balances), {
-            currencyId: d.currencyId,
-            amount: Number(d.amount || 0),
+            currencyId: draft.currencyId,
+            amount: Number(draft.amount || 0),
             createdAt: serverTimestamp(),
             ownerUid,
           })
@@ -489,11 +458,11 @@ function AccountItem({
       {/* Collapsed primitive view */}
       {!showBalancesEditor ? (
         <div className="my-3 text-muted-foreground">
-          {serverBalances.length === 0 ? (
-            <span>Валюты не добавлены</span>
+          {nonZeroBalances.length === 0 ? (
+            <span>Нет валют с ненулевым остатком</span>
           ) : (
             <div className="flex flex-col gap-y-3">
-              {serverBalances.map((b) => {
+              {nonZeroBalances.map((b) => {
                 const currency = currencyLabel(b.currencyId);
 
                 return (
@@ -508,14 +477,15 @@ function AccountItem({
                     >
                       {b.amount}
                     </span>
-                    <span className={cn(
-                      "font-medium",
-                      { 'text-sm':  currency.length > 2}
-                    )}>
+                    <span
+                      className={cn("font-medium", {
+                        "text-sm": currency.length > 2,
+                      })}
+                    >
                       {currency}
                     </span>
                   </div>
-                )
+                );
               })}
             </div>
           )}
@@ -563,60 +533,32 @@ function AccountItem({
             </div>
           </div>
         </div>
-        {visibleDrafts.map((b) => {
-          const currency = currencyLabel(b.currencyId);
-          const amount = Number(b.amount);
+        {drafts.map((draft) => {
+          const currency = currencyLabel(draft.currencyId);
+          const amount = Number(draft.amount || 0);
 
           return (
-            <div key={b.id} className="flex items-center gap-2">
-              <Select value={b.currencyId} onValueChange={(v) => updateDraft(b.id, { currencyId: v })}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Выберите валюту" />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div key={draft.currencyId} className="flex items-center gap-3">
+              <div className="w-48 text-sm font-medium text-muted-foreground">{currency}</div>
               <Input
                 className="w-40"
                 type="number"
-                value={String(b.amount)}
-                onChange={(e) => updateDraft(b.id, { amount: e.target.value })}
+                value={draft.amount}
+                onChange={(e) => updateDraft(draft.currencyId, e.target.value)}
               />
-              <div>
-                <span
-                  className={cn(
-                    "ml-2 px-1.5 py-0.5 rounded text-sm font-semibold",
-                    amount >= 0
-                      ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-400/10"
-                      : "text-rose-700 bg-rose-50 dark:text-rose-400 dark:bg-rose-400/10"
-                  )}
-                >
-                  {amount}
-                </span>
-                <span className={cn(
-                  "text-muted-foreground ml-1",
-                  { 'text-sm':  currency.length > 2}
-                )}>
-                  {currency}
-                </span>
-              </div>
-              <ConfirmBalanceDelete
-                onDelete={() => {
-                  if ((b as any).isNew) {
-                    setDrafts((ds) => ds.filter((x) => x.id !== b.id));
-                  } else {
-                    markDelete(b.id);
-                  }
-                }}
-              />
+              <span
+                className={cn(
+                  "px-1.5 py-0.5 rounded text-sm font-semibold",
+                  amount >= 0
+                    ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-400/10"
+                    : "text-rose-700 bg-rose-50 dark:text-rose-400 dark:bg-rose-400/10"
+                )}
+              >
+                {amount}
+              </span>
             </div>
-          )
+          );
         })}
-
-        {/* Add currency block removed from editor area */}
 
         <div className="pt-2 flex gap-2">
           <Button
@@ -636,75 +578,14 @@ function AccountItem({
               setShowBalancesEditor(false);
             }}
             loading={saving}
-            disabled={!(isDirty || editName.trim() !== account.name || (account.color || "#000000") !== editColor) || hasDuplicates}
-            title={hasDuplicates ? "Исправьте дубликаты валют" : undefined}
+            disabled={!canSave}
           >
             Обновить
           </Button>
-          {hasDuplicates ? (
-            <span className="text-xs text-red-600 self-center">Выбраны повторяющиеся валюты. Сделайте их уникальными.</span>
-          ) : null}
         </div>
       </div>
       ) : null}
 
-      {/* Add currency block - outside editor via toggle */}
-      <div className="pt-2">
-        {!showAddForm ? (
-          <Button variant="outline" onClick={() => setShowAddForm(true)}>Добавить валюту</Button>
-        ) : (
-          <div className="flex items-end gap-2">
-            <div className="grid gap-1">
-              <Label htmlFor={addCurSelId}>Валюта</Label>
-              <Select value={adding.currencyId} onValueChange={(v) => setAdding((s) => ({ ...s, currencyId: v }))}>
-                <SelectTrigger id={addCurSelId} className="w-48">
-                  <SelectValue placeholder="Выберите валюту" />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-1">
-              <Label htmlFor={addAmtId}>Остаток</Label>
-              <Input
-                id={addAmtId}
-                className="w-40"
-                type="number"
-                value={adding.amount}
-                onChange={(e) => setAdding((s) => ({ ...s, amount: e.target.value }))}
-              />
-            </div>
-            <Button className="self-end" onClick={async () => { const ok = await addBalanceImmediate(); if (ok) setShowAddForm(false); }}>
-              Добавить
-            </Button>
-            <Button className="self-end" variant="ghost" onClick={() => setShowAddForm(false)}>
-              Отмена
-            </Button>
-          </div>
-        )}
-        {addError ? (
-          <Alert className="mt-2" variant="default">{addError}</Alert>
-        ) : null}
-      </div>
     </div>
-  );
-}
-
-function ConfirmBalanceDelete({ onDelete }: { onDelete: () => Promise<void> | void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <Button variant="ghost" className="ml-auto" onClick={() => setOpen(true)}>Удалить</Button>
-      <ConfirmDialog
-        open={open}
-        title="Удалить валюту счета?"
-        description={`Будет удалена валюта и её остаток из этого счета.`}
-        onConfirm={onDelete}
-        onOpenChange={setOpen}
-      />
-    </>
   );
 }
