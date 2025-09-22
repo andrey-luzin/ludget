@@ -9,12 +9,12 @@ import { DatePicker } from "@/components/date-picker";
 import { Label } from "@/components/ui/label";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
-import { Collections, SubCollections } from "@/types/collections";
+import { Collections } from "@/types/collections";
 import { applyBalanceAdjustments } from "@/lib/account-balances";
-import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, updateDoc, doc } from "firebase/firestore";
 import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount, getAmountPreview } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import type { Account, Balance, Currency } from "@/types/entities";
+import type { Account, Currency } from "@/types/entities";
 
 export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { accounts: Account[]; currencies: Currency[]; editingTx?: any | null; onDone?: () => void }) {
   const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
@@ -26,7 +26,6 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
   const toAmtId = useId();
   const commentId = useId();
   const [accountId, setAccountId] = useState("");
-  const [accountBalances, setAccountBalances] = useState<Balance[]>([]);
   const [fromCurrencyId, setFromCurrencyId] = useState("");
   const [toCurrencyId, setToCurrencyId] = useState("");
   const [amountFrom, setAmountFrom] = useState("");
@@ -38,6 +37,31 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
   const submitLabel = editingTx ? "Сохранить" : "Добавить";
   const amountFromPreview = useMemo(() => getAmountPreview(amountFrom), [amountFrom]);
   const amountToPreview = useMemo(() => getAmountPreview(amountTo), [amountTo]);
+  const sameCurrencyError = "Нельзя обменивать валюту саму на себя.";
+
+  useEffect(() => {
+    if (!currencies.length) {
+      setFromCurrencyId("");
+      setToCurrencyId("");
+      return;
+    }
+    setFromCurrencyId((prev) => {
+      if (prev && currencies.some((c) => c.id === prev)) {
+        return prev;
+      }
+      return currencies[0]?.id ?? "";
+    });
+    setToCurrencyId((prev) => {
+      if (prev && currencies.some((c) => c.id === prev)) {
+        return prev;
+      }
+      return currencies[Math.min(1, currencies.length - 1)]?.id ?? currencies[0]?.id ?? "";
+    });
+  }, [currencies, accountId]);
+
+  useEffect(() => {
+    setError((prev) => (prev === sameCurrencyError && fromCurrencyId !== toCurrencyId ? null : prev));
+  }, [fromCurrencyId, toCurrencyId]);
 
   const visibleAccounts = useMemo(() => {
     if (!showOnlyMyAccounts || !userUid) return accounts;
@@ -66,31 +90,6 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
     }
   }, [editingTx]);
 
-  useEffect(() => {
-    if (!ownerUid || !accountId) {
-      setAccountBalances([]);
-      return;
-    }
-    const q = query(
-      collection(db, Collections.Accounts, accountId, SubCollections.Balances),
-      where("ownerUid", "==", ownerUid)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      const arr = snap.docs.map((d) => {
-        const data = d.data() as any;
-        return { id: d.id, currencyId: String(data.currencyId), amount: Number(data.amount) } as Balance;
-      });
-      setAccountBalances(arr);
-      if (!arr.find((b) => b.currencyId === fromCurrencyId)) {
-        setFromCurrencyId(arr[0]?.currencyId || "");
-      }
-      if (!arr.find((b) => b.currencyId === toCurrencyId)) {
-        setToCurrencyId(arr[0]?.currencyId || "");
-      }
-    });
-    return () => unsub();
-  }, [ownerUid, accountId]);
-
   function handleAmountFromChange(e: React.ChangeEvent<HTMLInputElement>) {
     setAmountFrom(sanitizeMoneyInput(e.target.value));
   }
@@ -101,6 +100,10 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
   async function submit() {
     if (!accountId || !fromCurrencyId || !toCurrencyId || !amountFrom.trim() || !amountTo.trim()) {
       setError("Заполните обязательные поля.");
+      return;
+    }
+    if (fromCurrencyId === toCurrencyId) {
+      setError(sameCurrencyError);
       return;
     }
     const evaluatedFrom = evaluateAmountExpression(amountFrom);
@@ -115,7 +118,6 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
 
     try {
       if (editingTx?.id) {
-        const { updateDoc, doc } = await import("firebase/firestore");
         const prevAmountFrom = Number(editingTx.amountFrom ?? 0);
         const prevAmountTo = Number(editingTx.amountTo ?? 0);
         if (editingTx.accountId && editingTx.fromCurrencyId && prevAmountFrom) {
@@ -191,10 +193,15 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <Label htmlFor={fromCurSelId}>Продали (валюта)</Label>
-          <Select value={fromCurrencyId} onValueChange={setFromCurrencyId}>
+          <Select value={fromCurrencyId} onValueChange={(value) => {
+            setFromCurrencyId(value);
+            setError((prev) => (prev === sameCurrencyError && value !== toCurrencyId ? null : prev));
+          }}>
             <SelectTrigger id={fromCurSelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{currencyName(b.currencyId)}</SelectItem>)}
+              {currencies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -221,10 +228,15 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <Label htmlFor={toCurSelId}>Купили (валюта)</Label>
-          <Select value={toCurrencyId} onValueChange={setToCurrencyId}>
+          <Select value={toCurrencyId} onValueChange={(value) => {
+            setToCurrencyId(value);
+            setError((prev) => (prev === sameCurrencyError && value !== fromCurrencyId ? null : prev));
+          }}>
             <SelectTrigger id={toCurSelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{currencyName(b.currencyId)}</SelectItem>)}
+              {currencies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

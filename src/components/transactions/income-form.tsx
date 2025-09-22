@@ -9,12 +9,12 @@ import { DatePicker } from "@/components/date-picker";
 import { Label } from "@/components/ui/label";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
-import { Collections, SubCollections } from "@/types/collections";
+import { Collections } from "@/types/collections";
 import { applyBalanceAdjustments } from "@/lib/account-balances";
-import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount, getAmountPreview } from "@/lib/money";
 import { cn } from "@/lib/utils";
-import type { Account, Balance, Currency, Source } from "@/types/entities";
+import type { Account, Currency, Source } from "@/types/entities";
 
 export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }: {
   accounts: Account[];
@@ -31,7 +31,6 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
   const sourceSelId = useId();
   const commentId = useId();
   const [accountId, setAccountId] = useState("");
-  const [accountBalances, setAccountBalances] = useState<Balance[]>([]);
   const [currencyId, setCurrencyId] = useState("");
   const [sourceId, setSourceId] = useState("");
   const [amount, setAmount] = useState("");
@@ -58,26 +57,17 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
   }, [visibleAccounts, accountId]);
 
   useEffect(() => {
-    if (!ownerUid || !accountId) {
-      setAccountBalances([]);
+    if (!currencies.length) {
+      setCurrencyId("");
       return;
     }
-    const q = query(
-      collection(db, Collections.Accounts, accountId, SubCollections.Balances),
-      where("ownerUid", "==", ownerUid)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      const arr = snap.docs.map((d) => {
-        const data = d.data() as any;
-        return { id: d.id, currencyId: String(data.currencyId), amount: Number(data.amount) } as Balance;
-      });
-      setAccountBalances(arr);
-      if (!arr.find((b) => b.currencyId === currencyId)) {
-        setCurrencyId(arr[0]?.currencyId || "");
+    setCurrencyId((prev) => {
+      if (prev && currencies.some((c) => c.id === prev)) {
+        return prev;
       }
+      return currencies[0]?.id ?? "";
     });
-    return () => unsub();
-  }, [ownerUid, accountId]);
+  }, [currencies, accountId]);
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     setAmount(sanitizeMoneyInput(e.target.value));
@@ -238,7 +228,9 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
           <Select value={currencyId} onValueChange={setCurrencyId}>
             <SelectTrigger id={currencySelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
             <SelectContent>
-              {accountBalances.map((b) => <SelectItem key={b.id} value={b.currencyId}>{currencyName(b.currencyId)}</SelectItem>)}
+              {currencies.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
