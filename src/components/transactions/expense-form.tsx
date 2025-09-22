@@ -12,7 +12,8 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
 import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where, updateDoc, doc } from "firebase/firestore";
-import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
+import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount, getAmountPreview } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import type { Account, Balance, Category, Currency } from "@/types/entities";
 
 export function ExpenseForm({ accounts, currencies, categories, editingTx, onDone }: {
@@ -39,6 +40,7 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
   const [error, setError] = useState<string | null>(null);
   const currencyName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
   const submitLabel = editingTx ? "Сохранить" : "Добавить";
+  const amountPreview = useMemo(() => getAmountPreview(amount), [amount]);
 
   const visibleAccounts = useMemo(() => {
     if (!showOnlyMyAccounts || !userUid) return accounts;
@@ -217,7 +219,21 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <Label htmlFor={amountId}>Сумма</Label>
-          <Input id={amountId} className="w-40" type="text" placeholder="0.0" value={amount} onChange={handleAmountChange} />
+          <div className="relative">
+            <Input
+              id={amountId}
+              className={cn("w-50", amountPreview ? "pr-16" : undefined)}
+              type="text"
+              placeholder="0.0"
+              value={amount}
+              onChange={handleAmountChange}
+            />
+            {amountPreview ? (
+              <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                {amountPreview}
+              </span>
+            ) : null}
+          </div>
         </div>
         <div className="grid gap-1">
           <Label htmlFor={currencySelId}>Валюта</Label>

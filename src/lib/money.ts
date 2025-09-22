@@ -23,3 +23,20 @@ export function evaluateAmountExpression(raw: string): number | null {
 export function roundMoneyAmount(n: number): number {
   return Math.floor(n * 100) / 100;
 }
+
+export function getAmountPreview(raw: string): string | null {
+  const sanitized = sanitizeMoneyInput(raw).trim();
+  if (!sanitized) {
+    return null;
+  }
+  const expressionBody = sanitized.startsWith("-") ? sanitized.slice(1) : sanitized;
+  if (!/[+\-*/]/.test(expressionBody)) {
+    return null;
+  }
+  const evaluated = evaluateAmountExpression(sanitized);
+  if (evaluated == null) {
+    return null;
+  }
+  const rounded = roundMoneyAmount(evaluated).toFixed(2);
+  return `=${rounded}`;
+}

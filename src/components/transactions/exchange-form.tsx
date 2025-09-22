@@ -11,7 +11,8 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
 import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from "firebase/firestore";
-import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
+import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount, getAmountPreview } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import type { Account, Balance, Currency } from "@/types/entities";
 
 export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { accounts: Account[]; currencies: Currency[]; editingTx?: any | null; onDone?: () => void }) {
@@ -34,6 +35,8 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
   const [error, setError] = useState<string | null>(null);
   const currencyName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
   const submitLabel = editingTx ? "Сохранить" : "Добавить";
+  const amountFromPreview = useMemo(() => getAmountPreview(amountFrom), [amountFrom]);
+  const amountToPreview = useMemo(() => getAmountPreview(amountTo), [amountTo]);
 
   const visibleAccounts = useMemo(() => {
     if (!showOnlyMyAccounts || !userUid) return accounts;
@@ -176,7 +179,21 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
         </div>
         <div className="grid gap-1">
           <Label htmlFor={fromAmtId}>Сколько продали</Label>
-          <Input id={fromAmtId} className="w-40" type="text" placeholder="0.0" value={amountFrom} onChange={handleAmountFromChange} />
+          <div className="relative">
+            <Input
+              id={fromAmtId}
+              className={cn("w-50", amountFromPreview ? "pr-16" : undefined)}
+              type="text"
+              placeholder="0.0"
+              value={amountFrom}
+              onChange={handleAmountFromChange}
+            />
+            {amountFromPreview ? (
+              <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                {amountFromPreview}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -192,7 +209,21 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
         </div>
         <div className="grid gap-1">
           <Label htmlFor={toAmtId}>Сколько купили</Label>
-          <Input id={toAmtId} className="w-40" type="text" placeholder="0.0" value={amountTo} onChange={handleAmountToChange} />
+          <div className="relative">
+            <Input
+              id={toAmtId}
+              className={cn("w-50", amountToPreview ? "pr-16" : undefined)}
+              type="text"
+              placeholder="0.0"
+              value={amountTo}
+              onChange={handleAmountToChange}
+            />
+            {amountToPreview ? (
+              <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                {amountToPreview}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 

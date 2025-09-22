@@ -11,7 +11,8 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount } from "@/lib/money";
+import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount, getAmountPreview } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import type { Account } from "@/types/entities";
 
 export function TransferForm({ accounts, editingTx, onDone }: { accounts: Account[]; editingTx?: any | null; onDone?: () => void }) {
@@ -27,6 +28,7 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
   const [date, setDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
   const submitLabel = editingTx ? "Сохранить" : "Добавить";
+  const amountPreview = useMemo(() => getAmountPreview(amount), [amount]);
 
   // default accounts
   const visibleAccounts = useMemo(() => {
@@ -144,7 +146,21 @@ export function TransferForm({ accounts, editingTx, onDone }: { accounts: Accoun
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <Label htmlFor={amountId}>Сумма</Label>
-          <Input id={amountId} className="w-40" type="text" placeholder="0.0" value={amount} onChange={handleAmountChange} />
+          <div className="relative">
+            <Input
+              id={amountId}
+              className={cn("w-50", amountPreview ? "pr-16" : undefined)}
+              type="text"
+              placeholder="0.0"
+              value={amount}
+              onChange={handleAmountChange}
+            />
+            {amountPreview ? (
+              <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                {amountPreview}
+              </span>
+            ) : null}
+          </div>
         </div>
         <div className="grid gap-1 flex-1 min-w-56">
           <label className="text-sm font-medium">Комментарий</label>
