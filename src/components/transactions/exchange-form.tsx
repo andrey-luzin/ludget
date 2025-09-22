@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
+import { applyBalanceAdjustments } from "@/lib/account-balances";
 import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from "firebase/firestore";
 import { evaluateAmountExpression, sanitizeMoneyInput, roundMoneyAmount, getAmountPreview } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -110,36 +111,56 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
     }
     const normalizedFrom = Number(roundMoneyAmount(evaluatedFrom).toFixed(2));
     const normalizedTo = Number(roundMoneyAmount(evaluatedTo).toFixed(2));
-    if (editingTx?.id) {
-      const { updateDoc, doc } = await import("firebase/firestore");
-      await updateDoc(doc(db, Collections.Transactions, editingTx.id), {
-        accountId,
-        fromCurrencyId,
-        toCurrencyId,
-        amountFrom: normalizedFrom,
-        amountTo: normalizedTo,
-        comment: comment || null,
-        date,
-      } as any);
-    } else {
-      await addDoc(collection(db, Collections.Transactions), {
-        type: "exchange",
-        accountId,
-        fromCurrencyId,
-        toCurrencyId,
-        amountFrom: normalizedFrom,
-        amountTo: normalizedTo,
-        comment: comment || null,
-        date,
-        ownerUid,
-        createdAt: serverTimestamp(),
-      });
+    const adjustments = [] as { accountId: string; currencyId: string; delta: number }[];
+
+    try {
+      if (editingTx?.id) {
+        const { updateDoc, doc } = await import("firebase/firestore");
+        const prevAmountFrom = Number(editingTx.amountFrom ?? 0);
+        const prevAmountTo = Number(editingTx.amountTo ?? 0);
+        if (editingTx.accountId && editingTx.fromCurrencyId && prevAmountFrom) {
+          adjustments.push({ accountId: editingTx.accountId, currencyId: editingTx.fromCurrencyId, delta: prevAmountFrom });
+        }
+        if (editingTx.accountId && editingTx.toCurrencyId && prevAmountTo) {
+          adjustments.push({ accountId: editingTx.accountId, currencyId: editingTx.toCurrencyId, delta: -prevAmountTo });
+        }
+        await updateDoc(doc(db, Collections.Transactions, editingTx.id), {
+          accountId,
+          fromCurrencyId,
+          toCurrencyId,
+          amountFrom: normalizedFrom,
+          amountTo: normalizedTo,
+          comment: comment || null,
+          date,
+        } as any);
+      } else {
+        await addDoc(collection(db, Collections.Transactions), {
+          type: "exchange",
+          accountId,
+          fromCurrencyId,
+          toCurrencyId,
+          amountFrom: normalizedFrom,
+          amountTo: normalizedTo,
+          comment: comment || null,
+          date,
+          ownerUid,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      adjustments.push({ accountId, currencyId: fromCurrencyId, delta: -normalizedFrom });
+      adjustments.push({ accountId, currencyId: toCurrencyId, delta: normalizedTo });
+      await applyBalanceAdjustments(ownerUid, adjustments);
+
+      setAmountFrom("");
+      setAmountTo("");
+      setComment("");
+      setError(null);
+      onDone?.();
+    } catch (err) {
+      console.error("Failed to save exchange transaction", err);
+      setError("Не удалось сохранить транзакцию. Попробуйте ещё раз.");
     }
-    setAmountFrom("");
-    setAmountTo("");
-    setComment("");
-    setError(null);
-    onDone?.();
   }
 
   return (

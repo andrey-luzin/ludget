@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useId } from "react";
 import { db } from "@/lib/firebase";
+import { applyBalanceAdjustments } from "@/lib/account-balances";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
 import { collection, deleteDoc, doc, onSnapshot, orderBy, query, where } from "firebase/firestore";
@@ -123,8 +124,54 @@ export function TransactionsList({
     return Array.from(byDay.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
   }, [filtered]);
 
-  async function handleDelete(id: string) {
-    await deleteDoc(doc(db, Collections.Transactions, id));
+  async function handleDelete(tx: Tx) {
+    try {
+      await deleteDoc(doc(db, Collections.Transactions, tx.id));
+    } catch (err) {
+      console.error("Failed to delete transaction", err);
+      return;
+    }
+
+    if (!ownerUid) {
+      return;
+    }
+
+    const adjustments: { accountId: string; currencyId: string; delta: number }[] = [];
+    if (type === "income") {
+      const amount = Math.abs(Number(tx.amount ?? 0));
+      if (tx.accountId && tx.currencyId && amount) {
+        adjustments.push({ accountId: tx.accountId, currencyId: tx.currencyId, delta: -amount });
+      }
+    } else if (type === "expense") {
+      const amount = Math.abs(Number(tx.amount ?? 0));
+      if (tx.accountId && tx.currencyId && amount) {
+        adjustments.push({ accountId: tx.accountId, currencyId: tx.currencyId, delta: amount });
+      }
+    } else if (type === "transfer") {
+      const amount = Math.abs(Number(tx.amount ?? 0));
+      if (tx.fromAccountId && tx.currencyId && amount) {
+        adjustments.push({ accountId: tx.fromAccountId, currencyId: tx.currencyId, delta: amount });
+      }
+      if (tx.toAccountId && tx.currencyId && amount) {
+        adjustments.push({ accountId: tx.toAccountId, currencyId: tx.currencyId, delta: -amount });
+      }
+    } else if (type === "exchange") {
+      const amountFrom = Math.abs(Number(tx.amountFrom ?? 0));
+      const amountTo = Math.abs(Number(tx.amountTo ?? 0));
+      if (tx.accountId && tx.fromCurrencyId && amountFrom) {
+        adjustments.push({ accountId: tx.accountId, currencyId: tx.fromCurrencyId, delta: amountFrom });
+      }
+      if (tx.accountId && tx.toCurrencyId && amountTo) {
+        adjustments.push({ accountId: tx.accountId, currencyId: tx.toCurrencyId, delta: -amountTo });
+      }
+    }
+    if (adjustments.length) {
+      try {
+        await applyBalanceAdjustments(ownerUid, adjustments);
+      } catch (err) {
+        console.error("Failed to rollback balances after deletion", err);
+      }
+    }
   }
 
   return (
@@ -221,7 +268,7 @@ export function TransactionsList({
                     </Button>
                     <Button
                       variant="destructive"
-                      onClick={() => handleDelete(it.id)}
+                      onClick={() => handleDelete(it)}
                       disabled={editingId === it.id}
                     >
                       Удалить
