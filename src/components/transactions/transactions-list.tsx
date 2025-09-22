@@ -9,6 +9,7 @@ import { collection, deleteDoc, doc, onSnapshot, orderBy, query, where } from "f
 import { formatISO, parseISO, format, startOfDay, endOfDay, startOfMonth } from "date-fns";
 import { subDays } from "date-fns/subDays";
 import { Button } from "@/components/ui/button";
+import { AlertModal } from "@/components/ui/alert-modal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
@@ -40,6 +41,8 @@ export function TransactionsList({
   const [items, setItems] = useState<Tx[]>([]);
   const [accountFilter, setAccountFilter] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [confirmTx, setConfirmTx] = useState<Tx | null>(null);
+  const [pendingDelete, setPendingDelete] = useState(false);
   const accFilterId = useId();
   const dateFilterId = useId();
   const hasFilters =
@@ -124,16 +127,16 @@ export function TransactionsList({
     return Array.from(byDay.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
   }, [filtered]);
 
-  async function handleDelete(tx: Tx) {
+  async function handleDelete(tx: Tx): Promise<boolean> {
     try {
       await deleteDoc(doc(db, Collections.Transactions, tx.id));
     } catch (err) {
       console.error("Failed to delete transaction", err);
-      return;
+      return false;
     }
 
     if (!ownerUid) {
-      return;
+      return true;
     }
 
     const adjustments: { accountId: string; currencyId: string; delta: number }[] = [];
@@ -172,9 +175,11 @@ export function TransactionsList({
         console.error("Failed to rollback balances after deletion", err);
       }
     }
+    return true;
   }
 
   return (
+    <>
     <div className="mt-6 rounded-xl border bg-muted/30 p-4 md:p-5">
       <div className="mb-5 md:mb-6 flex flex-wrap items-end gap-2">
         <div className="grid gap-1">
@@ -268,7 +273,7 @@ export function TransactionsList({
                     </Button>
                     <Button
                       variant="destructive"
-                      onClick={() => handleDelete(it)}
+                      onClick={() => setConfirmTx(it)}
                       disabled={editingId === it.id}
                     >
                       Удалить
@@ -281,6 +286,40 @@ export function TransactionsList({
         ))}
       </div>
     </div>
+      <AlertModal
+        open={Boolean(confirmTx)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmTx(null);
+            setPendingDelete(false);
+          }
+        }}
+        title="Удалить транзакцию?"
+        description="Это действие нельзя отменить. Остатки счетов будут пересчитаны."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => { setConfirmTx(null); setPendingDelete(false); }} disabled={pendingDelete}>
+              Отмена
+            </Button>
+            <Button
+              variant="destructive"
+              loading={pendingDelete}
+              onClick={async () => {
+                if (!confirmTx) return;
+                setPendingDelete(true);
+                const success = await handleDelete(confirmTx);
+                if (success) {
+                  setConfirmTx(null);
+                }
+                setPendingDelete(false);
+              }}
+            >
+              Удалить
+            </Button>
+          </>
+        }
+      />
+    </>
   );
 }
 
