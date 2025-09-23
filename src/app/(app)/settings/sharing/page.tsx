@@ -32,7 +32,7 @@ export default function SharingSettingsPage() {
     <div className="max-w-2xl">
       <h1 className="text-2xl font-semibold tracking-tight">Совместное использование</h1>
       <p className="text-muted-foreground mt-1">
-        Добавляйте коллег и управляйте тем, какие счета видны по умолчанию в формах.
+        Управляйте тем, какие счета видны по умолчанию в формах.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">

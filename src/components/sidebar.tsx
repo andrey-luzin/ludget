@@ -40,10 +40,11 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
   const router = useRouter();
   const { signOut } = useAuth();
   const [directoriesOpen, setDirectoriesOpen] = useState(true);
-  const isMobile = useMediaQuery(`(max-width: ${MQBreakpoint.Lg - 1}px)`);
+  const isTablet = useMediaQuery(`(max-width: ${MQBreakpoint.Md - 1}px)`);
+  const isMobile = useMediaQuery(`(max-width: ${MQBreakpoint.Sm - 1}px)`);
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const isControlled = typeof mobileOpen === "boolean";
-  const effectiveMobileOpen = isMobile ? (isControlled ? mobileOpen! : internalMobileOpen) : true;
+  const effectiveMobileOpen = isTablet ? (isControlled ? mobileOpen! : internalMobileOpen) : true;
 
   const setMobileOpen = useCallback(
     (next: boolean) => {
@@ -57,17 +58,17 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
   );
 
   useEffect(() => {
-    if (!isMobile) {
+    if (!isTablet) {
       setMobileOpen(true);
     } else if (!isControlled) {
       setMobileOpen(false);
     }
-  }, [isControlled, isMobile, setMobileOpen]);
+  }, [isControlled, isTablet, setMobileOpen]);
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   const handleNavigate = () => {
-    if (isMobile) {
+    if (isTablet) {
       setMobileOpen(false);
     }
   };
@@ -82,29 +83,29 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
     () =>
       cn(
         "flex h-full w-64 flex-col border-r bg-sidebar px-3 py-4 text-sidebar-foreground transition-transform lg:h-screen lg:w-60 lg:translate-x-0",
-        isMobile
+        isTablet
           ? [
               "fixed left-0 top-0 z-40 h-screen shadow-xl duration-200",
               effectiveMobileOpen ? "translate-x-0" : "-translate-x-full",
             ]
           : "sticky top-0",
       ),
-    [effectiveMobileOpen, isMobile]
+    [effectiveMobileOpen, isTablet]
   );
 
   return (
     <>
-      {isMobile && effectiveMobileOpen ? (
+      {isTablet && effectiveMobileOpen ? (
         <div
           className="fixed inset-0 z-30 bg-black/30"
           onClick={() => setMobileOpen(false)}
           aria-hidden="true"
         />
       ) : null}
-      <aside className={sidebarClasses} aria-hidden={isMobile && !effectiveMobileOpen}>
+      <aside className={sidebarClasses} aria-hidden={isTablet && !effectiveMobileOpen}>
         <div className="flex items-center justify-between px-2 pb-4">
           <div className="text-lg font-semibold tracking-tight">Ludget</div>
-          {isMobile ? (
+          {isTablet ? (
             <Button
               type="button"
               variant="ghost"
@@ -193,7 +194,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
             </Button>
           </DropdownMenuTrigger>
             <DropdownMenuContent
-              side="top"
+              side={!isMobile ? "right" : "top"}
               align="end"
               sideOffset={1}
               className="w-60 border-muted-foreground/20 origin-bottom-left"

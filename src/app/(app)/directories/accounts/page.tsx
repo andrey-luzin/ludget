@@ -33,7 +33,7 @@ import { Collections, SubCollections } from "@/types/collections";
 import type { Account, Balance, Currency } from "@/types/entities";
 
 export default function AccountsPage() {
-  const { ownerUid, userUid } = useAuth();
+  const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [newName, setNewName] = useState("");
   const [addAccountError, setAddAccountError] = useState<string | null>(null);
@@ -101,7 +101,10 @@ export default function AccountsPage() {
           if (orderA !== orderB) return orderA - orderB;
           return a.name.localeCompare(b.name, "ru", { sensitivity: "base" });
         });
-        setAccounts(sorted);
+        const filtered = showOnlyMyAccounts && userUid
+          ? sorted.filter((acc) => (acc.createdBy ?? ownerUid) === userUid)
+          : sorted;
+        setAccounts(filtered);
         const missingOrder = mapped.some((acc) => acc.order == null);
         if (missingOrder) {
           void persistAccountOrder(sorted.map((acc, idx) => ({ ...acc, order: idx })));
@@ -109,7 +112,7 @@ export default function AccountsPage() {
       }
     );
     return () => unsub();
-  }, [ownerUid, persistAccountOrder]);
+  }, [ownerUid, persistAccountOrder, showOnlyMyAccounts, userUid]);
 
   useEffect(() => {
     if (!ownerUid) return;

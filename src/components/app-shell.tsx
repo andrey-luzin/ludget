@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MQBreakpoint, useMediaQuery } from "@/hooks/use-media-query";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const isMobile = useMediaQuery(`(max-width: ${MQBreakpoint.Lg - 1}px)`);
+  const isMobile = useMediaQuery(`(max-width: ${MQBreakpoint.Md - 1}px)`);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
