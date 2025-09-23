@@ -138,12 +138,14 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
   }
 
   return (
-    <div className="grid gap-3">
-      <div className="flex items-end gap-3">
+    <div className="grid gap-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end">
         <div className="grid gap-1">
           <Label htmlFor={fromSelId}>Счет откуда</Label>
           <Select value={fromId} onValueChange={setFromId}>
-            <SelectTrigger id={fromSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={fromSelId} className="font-semibold sm:w-56">
+              <SelectValue placeholder="Выберите" />
+            </SelectTrigger>
             <SelectContent>
               {visibleAccounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
@@ -159,7 +161,9 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
         <div className="grid gap-1">
           <Label htmlFor={toSelId}>Счет куда</Label>
           <Select value={toId} onValueChange={setToId}>
-            <SelectTrigger id={toSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={toSelId} className="font-semibold sm:w-56">
+              <SelectValue placeholder="Выберите" />
+            </SelectTrigger>
             <SelectContent>
               {visibleAccounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
@@ -172,19 +176,19 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
             </SelectContent>
           </Select>
         </div>
-        <div className="grid gap-1 ml-auto">
+        <div className="grid gap-1 md:ml-auto md:w-auto">
           <Label htmlFor={dateId}>Дата</Label>
-          <DatePicker value={date} onChange={setDate} triggerId={dateId} />
+          <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="grid gap-1">
           <Label htmlFor={amountId}>Сумма</Label>
           <div className="relative">
             <Input
               id={amountId}
-              className={cn("w-40", amountPreview ? "pr-16" : undefined)}
+              className={cn("w-full sm:w-48", amountPreview ? "pr-16" : undefined)}
               type="text"
               placeholder="0.0"
               value={amount}
@@ -200,7 +204,9 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
         <div className="grid gap-1">
           <Label htmlFor={currencySelId}>Валюта</Label>
           <Select value={currencyId} onValueChange={setCurrencyId}>
-            <SelectTrigger id={currencySelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={currencySelId} className="w-full sm:w-40">
+              <SelectValue placeholder="Выберите" />
+            </SelectTrigger>
             <SelectContent>
               {currencies.map((currency) => (
                 <SelectItem key={currency.id} value={currency.id}>
@@ -210,7 +216,7 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
             </SelectContent>
           </Select>
         </div>
-        <div className="grid gap-1 flex-1 min-w-56">
+        <div className="grid min-w-0 flex-1 gap-1">
           <label className="text-sm font-medium">Комментарий</label>
           <Input placeholder="Опционально" value={comment} onChange={(e) => setComment(e.target.value)} />
         </div>

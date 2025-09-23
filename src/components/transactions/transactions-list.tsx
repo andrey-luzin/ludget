@@ -215,8 +215,11 @@ export function TransactionsList({
             <div className="text-sm text-muted-foreground mb-1">{format(parseISO(day), "dd.MM.yyyy")}</div>
             <div className="grid gap-2">
               {arr.map((it) => (
-                <div key={it.id} className="flex items-center gap-3 border rounded-md p-2 pl-3.5">
-                  <div className="flex-1 text-sm">
+                <div
+                  key={it.id}
+                  className="flex flex-col gap-3 rounded-md border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="space-y-1 sm:flex sm:flex-1 sm:items-center sm:gap-3 sm:space-y-0">
                     {type === "expense" ? (
                       <>
                         <span className="font-medium">{catName(it.categoryId)}</span>
@@ -250,7 +253,7 @@ export function TransactionsList({
                       </>
                     )}
                   </div>
-                  <div className="text-sm">
+                  <div className="text-sm font-medium sm:text-right">
                     {type === "exchange" ? (
                       <>
                         <span className="text-red-600 mr-2">-{it.amountFrom} {curName(it.fromCurrencyId)}</span>
@@ -263,7 +266,7 @@ export function TransactionsList({
                       </>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 sm:justify-end">
                     <Button
                       variant="ghost"
                       onClick={() => onEdit?.(it)}

@@ -3,13 +3,15 @@
 - The task involves working with Git repositories in your current working directory.
 - Wait for all terminal commands to be completed (or terminate them) before finishing.
 - **Provide clear and concise summaries of all changes made.** Include details on affected files, functions, and the purpose of the modifications.
+- Do not install or use packages that were released less than one week ago. Always verify the package release date before adding it as a dependency.
+- Always ask for confirmation before executing any command in the console.
+- Allowed commands without explicit confirmation: `npm run lint`.
 - Use arrow functions where possible
 - Create new components in the Components directory in directories with a capital letter, except for the directory UI
-- Wrap the body of the condition in a syntax block
+- Always wrap conditional statements in curly braces {}.
 - Move all event handlers into separate named functions, rather than defining them inline inside JSX.
 - Don't repeat yourself
-- Write readable function parameters
-
+- Use descriptive and self-explanatory names for function parameters.
 
 # Git instructions
 If completing the user's task requires writing or modifying files:

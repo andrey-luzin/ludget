@@ -166,12 +166,14 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
   }
 
   return (
-    <div className="grid gap-3">
-      <div className="flex items-end justify-between gap-3">
+    <div className="grid gap-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="grid gap-1">
           <Label htmlFor={accSelId}>Счет</Label>
           <Select value={accountId} onValueChange={setAccountId}>
-            <SelectTrigger id={accSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={accSelId} className="font-semibold sm:w-56">
+              <SelectValue placeholder="Выберите" />
+            </SelectTrigger>
             <SelectContent>
               {visibleAccounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
@@ -184,20 +186,22 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
             </SelectContent>
           </Select>
         </div>
-        <div className="grid gap-1">
+        <div className="grid gap-1 md:w-auto">
           <Label htmlFor={dateId}>Дата</Label>
-          <DatePicker value={date} onChange={setDate} triggerId={dateId} />
+          <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="grid gap-1">
           <Label htmlFor={fromCurSelId}>Продали (валюта)</Label>
           <Select value={fromCurrencyId} onValueChange={(value) => {
             setFromCurrencyId(value);
             setError((prev) => (prev === sameCurrencyError && value !== toCurrencyId ? null : prev));
           }}>
-            <SelectTrigger id={fromCurSelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={fromCurSelId} className="w-full sm:w-44">
+              <SelectValue placeholder="Выберите" />
+            </SelectTrigger>
             <SelectContent>
               {currencies.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
@@ -210,7 +214,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
           <div className="relative">
             <Input
               id={fromAmtId}
-              className={cn("w-50", amountFromPreview ? "pr-16" : undefined)}
+              className={cn("w-full sm:w-48", amountFromPreview ? "pr-16" : undefined)}
               type="text"
               placeholder="0.0"
               value={amountFrom}
@@ -225,14 +229,16 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="grid gap-1">
           <Label htmlFor={toCurSelId}>Купили (валюта)</Label>
           <Select value={toCurrencyId} onValueChange={(value) => {
             setToCurrencyId(value);
             setError((prev) => (prev === sameCurrencyError && value !== fromCurrencyId ? null : prev));
           }}>
-            <SelectTrigger id={toCurSelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={toCurSelId} className="w-full sm:w-44">
+              <SelectValue placeholder="Выберите" />
+            </SelectTrigger>
             <SelectContent>
               {currencies.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
@@ -245,7 +251,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
           <div className="relative">
             <Input
               id={toAmtId}
-              className={cn("w-50", amountToPreview ? "pr-16" : undefined)}
+              className={cn("w-full sm:w-48", amountToPreview ? "pr-16" : undefined)}
               type="text"
               placeholder="0.0"
               value={amountTo}
@@ -261,7 +267,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
-        <div className="grid gap-1 flex-1 min-w-56">
+        <div className="grid min-w-0 flex-1 gap-1">
           <Label htmlFor={commentId}>Комментарий</Label>
           <Input id={commentId} placeholder="Опционально" value={comment} onChange={(e) => setComment(e.target.value)} />
         </div>

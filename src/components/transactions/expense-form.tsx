@@ -198,12 +198,14 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
   }, [categories]);
 
   return (
-    <div className="grid gap-3">
-      <div className="flex items-end justify-between gap-3">
+    <div className="grid gap-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="grid gap-1">
           <Label htmlFor={accSelId}>Счет</Label>
           <Select value={accountId} onValueChange={setAccountId}>
-            <SelectTrigger id={accSelId} className="w-56 font-semibold"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={accSelId} className="font-semibold sm:w-56">
+              <SelectValue placeholder="Выберите" />
+            </SelectTrigger>
             <SelectContent>
               {visibleAccounts.map((a) => (
                 <SelectItem key={a.id} value={a.id}>
@@ -216,19 +218,19 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
             </SelectContent>
           </Select>
         </div>
-        <div className="grid gap-1">
+        <div className="grid gap-1 md:w-auto">
           <Label htmlFor={dateId}>Дата</Label>
-          <DatePicker value={date} onChange={setDate} triggerId={dateId} />
+          <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="grid gap-1">
           <Label htmlFor={amountId}>Сумма</Label>
           <div className="relative">
             <Input
               id={amountId}
-              className={cn("w-50", amountPreview ? "pr-16" : undefined)}
+              className={cn("w-full sm:w-48", amountPreview ? "pr-16" : undefined)}
               type="text"
               placeholder="0.0"
               value={amount}
@@ -241,10 +243,12 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
             ) : null}
           </div>
         </div>
-        <div className="grid gap-1">
+        <div className="grid gap-1 sm:w-44">
           <Label htmlFor={currencySelId}>Валюта</Label>
           <Select value={currencyId} onValueChange={setCurrencyId}>
-            <SelectTrigger id={currencySelId} className="w-40"><SelectValue placeholder="Выберите" /></SelectTrigger>
+            <SelectTrigger id={currencySelId} className="w-full">
+              <SelectValue placeholder="Выберите" />
+            </SelectTrigger>
             <SelectContent>
               {currencies.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
@@ -254,7 +258,7 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
         </div>
       </div>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="grid gap-1">
           <Label htmlFor={categorySelId}>Категория</Label>
           <Combobox
@@ -264,10 +268,10 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
             options={categoryOptions}
             placeholder="Выберите"
             searchPlaceholder="Поиск категории"
-            triggerClassName="w-64 justify-between"
+            triggerClassName="w-full justify-between sm:w-64"
           />
         </div>
-        <div className="grid gap-1 flex-1 min-w-56">
+        <div className="grid min-w-0 flex-1 gap-1">
           <Label htmlFor={commentId}>Комментарий</Label>
           <Input id={commentId} placeholder="Опционально" value={comment} onChange={(e) => setComment(e.target.value)} />
         </div>
