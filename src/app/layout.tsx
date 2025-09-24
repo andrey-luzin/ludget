@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { usePathname, useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -63,9 +64,11 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <AppAuthProvider>
-          <AuthGate>{children}</AuthGate>
-        </AppAuthProvider>
+        <ThemeProvider>
+          <AppAuthProvider>
+            <AuthGate>{children}</AuthGate>
+          </AppAuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

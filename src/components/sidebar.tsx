@@ -28,6 +28,7 @@ const directoriesItems = [
 
 const settingsItems = [
   { href: "/settings/sharing", label: "Совместное использование" },
+  { href: "/settings/preferences", label: "Персонализация" },
 ];
 
 type SidebarProps = {
