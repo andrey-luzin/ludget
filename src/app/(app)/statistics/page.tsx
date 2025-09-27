@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DatePicker } from "@/components/date-picker";
+import { DateRangePicker, type DateRange } from "@/components/filters/date-range-picker";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
@@ -13,14 +12,13 @@ import { collection, onSnapshot, orderBy, query, where } from "firebase/firestor
 import { CategoryMultiSelect } from "@/components/statistics/category-multiselect";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
 
-type PeriodKey = "30d" | "month" | "quarter" | "year" | "all" | "custom";
-
 type Tx = { id: string; amount: number; date: any; categoryId?: string | null };
 
 export default function StatisticsPage() {
-  const [period, setPeriod] = useState<PeriodKey>("30d");
-  const [customFrom, setCustomFrom] = useState<Date>(() => new Date(new Date().setMonth(new Date().getMonth() - 1)));
-  const [customTo, setCustomTo] = useState<Date>(new Date());
+  const [dateRange, setDateRange] = useState<DateRange>(() => {
+    const now = new Date();
+    return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29), to: now };
+  });
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [tab, setTab] = useState("categories");
 
@@ -56,7 +54,8 @@ export default function StatisticsPage() {
     return () => unsub();
   }, [ownerUid]);
 
-  const { from, to } = useMemo(() => periodToRange(period, customFrom, customTo), [period, customFrom, customTo]);
+  const from = useMemo(() => dateRange.from ?? new Date(0), [dateRange]);
+  const to = useMemo(() => dateRange.to ?? new Date(), [dateRange]);
 
   const catIndex = useMemo(() => buildCategoryIndex(categories), [categories]);
 
@@ -99,38 +98,14 @@ export default function StatisticsPage() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-2">
           <div className="text-sm text-muted-foreground">Период</div>
-          <Select value={period} onValueChange={(v) => setPeriod(v as PeriodKey)}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="30d">Последние 30 дней</SelectItem>
-              <SelectItem value="month">Этот месяц</SelectItem>
-              <SelectItem value="quarter">Квартал</SelectItem>
-              <SelectItem value="year">Год</SelectItem>
-              <SelectItem value="all">За всё</SelectItem>
-              <SelectItem value="custom">Произвольный</SelectItem>
-            </SelectContent>
-          </Select>
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
         </div>
-        {period === "custom" ? (
-          <div className="flex items-end gap-2">
-            <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">С</div>
-              <DatePicker value={customFrom} onChange={setCustomFrom} />
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">По</div>
-              <DatePicker value={customTo} onChange={setCustomTo} />
-            </div>
-          </div>
-        ) : null}
         <div className="space-y-2 min-w-64">
           <div className="text-sm text-muted-foreground">Категории</div>
           <CategoryMultiSelect value={selectedCategories} onChange={setSelectedCategories} categories={categories} />
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" onClick={() => resetFilters(setPeriod, setSelectedCategories, setCustomFrom, setCustomTo)}>
+          <Button variant="outline" onClick={() => resetFilters(setDateRange, setSelectedCategories)}>
             Сбросить
           </Button>
         </div>
@@ -184,47 +159,14 @@ export default function StatisticsPage() {
   );
 }
 
-function periodToRange(period: PeriodKey, customFrom: Date, customTo: Date) {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  switch (period) {
-    case "30d": {
-      const from = new Date(now);
-      from.setDate(from.getDate() - 30);
-      return { from, to: now };
-    }
-    case "month":
-      return { from: startOfMonth, to: now };
-    case "quarter":
-      return { from: startOfQuarter, to: now };
-    case "year":
-      return { from: startOfYear, to: now };
-    case "all": {
-      const from = new Date(now);
-      from.setFullYear(now.getFullYear() - 10);
-      return { from, to: now };
-    }
-    case "custom":
-      return { from: customFrom, to: customTo };
-  }
-}
-
 function formatCurrency(v: number) {
   return new Intl.NumberFormat(undefined, { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(v);
 }
 
-function resetFilters(
-  setPeriod: (p: PeriodKey) => void,
-  setCategories: (v: string[]) => void,
-  setFrom: (d: Date) => void,
-  setTo: (d: Date) => void,
-) {
-  setPeriod("30d");
+function resetFilters(setDateRange: (r: DateRange) => void, setCategories: (v: string[]) => void) {
+  const now = new Date();
+  setDateRange({ from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29), to: now });
   setCategories([]);
-  setFrom(new Date(new Date().setMonth(new Date().getMonth() - 1)));
-  setTo(new Date());
 }
 
 function buildCategoryIndex(categories: Category[]) {

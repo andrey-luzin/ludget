@@ -63,7 +63,7 @@ export function CategoryMultiSelect({ value, onChange, categories, placeholder =
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="p-0 w-72">
+      <PopoverContent align="start" className="p-0 w-96">
         <div className="border-b p-2 flex items-center gap-2">
           <Input
             placeholder="Поиск..."
