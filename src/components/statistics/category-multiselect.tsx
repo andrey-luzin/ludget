@@ -1,0 +1,168 @@
+"use client";
+
+import * as React from "react";
+import { ChevronsUpDown, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import type { Category } from "@/types/entities";
+
+export type CategoryMultiSelectProps = {
+  value: string[];
+  onChange: (next: string[]) => void;
+  categories: Category[];
+  placeholder?: string;
+  triggerClassName?: string;
+};
+
+export function CategoryMultiSelect({ value, onChange, categories, placeholder = "Категории", triggerClassName }: CategoryMultiSelectProps) {
+  const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+
+  const { ordered, byId, childrenOf } = React.useMemo(() => buildCategoryIndex(categories), [categories]);
+
+  const allIds = React.useMemo(() => ordered.map((c) => c.id), [ordered]);
+
+  const selectedSet = React.useMemo(() => new Set(value), [value]);
+
+  const toggle = (id: string, includeChildren = true) => {
+    const next = new Set(selectedSet);
+    const ids = includeChildren ? [id, ...getDescendants(id, childrenOf)] : [id];
+    const shouldSelect = !ids.every((x) => next.has(x));
+    ids.forEach((x) => {
+      if (shouldSelect) next.add(x);
+      else next.delete(x);
+    });
+    onChange(Array.from(next));
+  };
+
+  const clearAll = () => onChange([]);
+  const selectAll = () => onChange(allIds);
+
+  const filteredIds = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return allIds;
+    return ordered
+      .filter((c) => c.name.toLowerCase().includes(q) || (c.parentId && (byId.get(c.parentId)?.name.toLowerCase() || "").includes(q)))
+      .map((c) => c.id);
+  }, [query, ordered, byId, allIds]);
+
+  const label = React.useMemo(() => {
+    if (value.length === 0) return placeholder;
+    if (value.length === 1) return byId.get(value[0])?.name ?? placeholder;
+    return `Выбрано: ${value.length}`;
+  }, [value, byId, placeholder]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" className={cn("justify-between", triggerClassName)}>
+          <span className={cn("truncate", value.length ? "text-foreground" : "text-muted-foreground")}>{label}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="p-0 w-72">
+        <div className="border-b p-2 flex items-center gap-2">
+          <Input
+            placeholder="Поиск..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-8"
+          />
+          <Button type="button" variant="ghost" size="sm" onClick={clearAll}>Сброс</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={selectAll}>Все</Button>
+        </div>
+        <div className="max-h-72 overflow-y-auto py-1 text-sm">
+          {ordered
+            .filter((c) => filteredIds.includes(c.id))
+            .map((c) => {
+              const depth = depthOf(c.id, byId);
+              const checked = selectedSet.has(c.id);
+              const partially = !checked && childrenOf.get(c.id)?.some((ch) => selectedSet.has(ch.id));
+              return (
+                <div
+                  key={c.id}
+                  role="button"
+                  tabIndex={0}
+                  className={cn("flex w-full cursor-pointer select-none items-center gap-2 px-2 py-1.5 hover:bg-muted")}
+                  onClick={() => toggle(c.id, true)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggle(c.id, true);
+                    }
+                  }}
+                >
+                  <span style={{ paddingLeft: Math.min(depth, 4) * 16 }} className="flex items-center gap-2">
+                    <Checkbox checked={checked || partially} aria-checked={partially ? "mixed" : checked} onCheckedChange={() => toggle(c.id, true)} />
+                    <span className="truncate">{c.name}</span>
+                  </span>
+                </div>
+              );
+            })}
+          {filteredIds.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">Ничего не найдено</div>
+          ) : null}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function buildCategoryIndex(categories: Category[]) {
+  const byId = new Map<string, Category>();
+  for (const c of categories) byId.set(c.id, c);
+
+  const childrenOf = new Map<string | null, Category[]>();
+  for (const c of categories) {
+    const parentKey = c.parentId && byId.has(c.parentId) ? c.parentId : null;
+    const arr = childrenOf.get(parentKey) ?? [];
+    arr.push(c);
+    childrenOf.set(parentKey, arr);
+  }
+  const sort = (a: Category, b: Category) => {
+    const ao = a.order ?? Number.MAX_SAFE_INTEGER;
+    const bo = b.order ?? Number.MAX_SAFE_INTEGER;
+    if (ao !== bo) return ao - bo;
+    return a.name.localeCompare(b.name, "ru", { sensitivity: "base" });
+  };
+  for (const [k, arr] of childrenOf) childrenOf.set(k, arr.sort(sort));
+
+  const ordered: Category[] = [];
+  const roots = childrenOf.get(null) ?? [];
+  const visit = (c: Category) => {
+    ordered.push(c);
+    const kids = childrenOf.get(c.id) ?? [];
+    for (const ch of kids) visit(ch);
+  };
+  for (const r of roots) visit(r);
+
+  return { ordered, byId, childrenOf } as const;
+}
+
+function getDescendants(id: string, childrenOf: Map<string | null, Category[]>) {
+  const out: string[] = [];
+  const walk = (x: string) => {
+    const kids = childrenOf.get(x) ?? [];
+    for (const k of kids) {
+      out.push(k.id);
+      walk(k.id);
+    }
+  };
+  walk(id);
+  return out;
+}
+
+function depthOf(id: string, byId: Map<string, Category>) {
+  let depth = 0;
+  let cur = byId.get(id);
+  const guard = new Set<string>();
+  while (cur?.parentId && !guard.has(cur.parentId)) {
+    guard.add(cur.parentId);
+    depth += 1;
+    cur = byId.get(cur.parentId);
+  }
+  return depth;
+}

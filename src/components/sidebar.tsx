@@ -17,6 +17,7 @@ import { MQBreakpoint, useMediaQuery } from "@/hooks/use-media-query";
 
 const navItems = [
   { href: "/", label: "Транзакции", emoji: "🧾" },
+  { href: "/statistics", label: "Статистика", emoji: "📈" },
 ];
 
 const directoriesItems = [
