@@ -106,40 +106,30 @@ export default function CurrenciesPage() {
 
   async function deleteCurrency(id: string) {
     try {
-      const q = query(
-        collectionGroup(db, SubCollections.Balances),
-        where("ownerUid", "==", ownerUid ?? "__none__"),
-        where("currencyId", "==", id)
-      );
-      const usedSnap = await getDocs(q);
-      const count = usedSnap.size;
-      if (count > 0) {
-        const name = currencies.find((c) => c.id === id)?.name || "(неизвестная)";
-        setBlocked({ name, count });
-        return;
-      }
       await deleteDoc(doc(db, Collections.Currencies, id));
-    } catch (e) {
+      return;
+    } catch (e: any) {
+      try {
+        // On failure (e.g., permission), try to detect usage with non-zero balances
+        const q = query(collectionGroup(db, SubCollections.Balances), where("currencyId", "==", id));
+        const usedSnap = await getDocs(q);
+        const nonZeroCount = usedSnap.docs.filter((d) => {
+          const data = d.data() as any;
+          return Number(data?.amount || 0) !== 0;
+        }).length;
+        if (nonZeroCount > 0) {
+          const name = currencies.find((c) => c.id === id)?.name || "(неизвестная)";
+          setBlocked({ name, count: nonZeroCount });
+          return;
+        }
+      } catch {}
       setBlocked({ name: currencies.find((c) => c.id === id)?.name || "(неизвестная)", count: -1 });
     }
   }
 
   async function askDeleteCurrency(currency: Currency) {
-    try {
-      const q = query(
-        collectionGroup(db, SubCollections.Balances),
-        where("ownerUid", "==", ownerUid ?? "__none__"),
-        where("currencyId", "==", currency.id)
-      );
-      const usedSnap = await getDocs(q);
-      if (usedSnap.size > 0) {
-        setBlocked({ name: currency.name, count: usedSnap.size });
-        return;
-      }
-      setConfirm({ id: currency.id, name: currency.name });
-    } catch (e) {
-      setConfirm({ id: currency.id, name: currency.name });
-    }
+    // Optimistically show confirmation; validation will run on actual delete
+    setConfirm({ id: currency.id, name: currency.name });
   }
 
   return (
