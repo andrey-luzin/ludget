@@ -92,6 +92,7 @@ export default function StatisticsPage() {
   }, [filtered, catIndex]);
 
   const total = grouped.reduce((s, x) => s + x.value, 0);
+  const palette = useChartPalette();
 
   return (
     <div className="p-4 lg:p-6 space-y-4">
@@ -195,12 +196,45 @@ function getDescendants(id: string, childrenOf: Map<string | null, Category[]>) 
   return out;
 }
 
-const palette = [
-  "hsl(var(--primary))",
-  "hsl(var(--chart-1, 220 70% 50%))",
-  "hsl(var(--chart-2, 280 65% 55%))",
-  "hsl(var(--chart-3, 340 75% 55%))",
-  "hsl(var(--chart-4, 30 85% 55%))",
-  "hsl(var(--chart-5, 160 60% 45%))",
-  "hsl(var(--muted-foreground))",
-];
+function useChartPalette() {
+  const [colors, setColors] = useState<string[]>([]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const resolveColor = (cssVar: string, fallback: string) => {
+      const el = document.createElement("span");
+      el.style.color = `var(${cssVar}, ${fallback})`;
+      document.body.appendChild(el);
+      const rgb = getComputedStyle(el).color || fallback;
+      el.remove();
+      return rgb;
+    };
+
+    const compute = () => {
+      const next = [
+        resolveColor("--primary", "rgb(56, 96, 255)"),
+        resolveColor("--chart-1", "rgb(56, 96, 255)"),
+        resolveColor("--chart-2", "rgb(56, 186, 172)"),
+        resolveColor("--chart-3", "rgb(186, 56, 230)"),
+        resolveColor("--chart-4", "rgb(255, 170, 32)"),
+        resolveColor("--chart-5", "rgb(240, 85, 70)"),
+        resolveColor("--muted-foreground", "rgb(120, 120, 120)"),
+      ];
+      setColors(next);
+    };
+
+    compute();
+
+    const obs = new MutationObserver((muts) => {
+      for (const m of muts) {
+        if (m.type === "attributes" && m.attributeName === "class") {
+          compute();
+          break;
+        }
+      }
+    });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  return colors.length ? colors : ["#3860FF", "#3860FF", "#38BAAC", "#BA38E6", "#FFAA20", "#F05546", "#777777"];
+}
