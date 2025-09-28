@@ -16,6 +16,7 @@ export type Balance = {
 export type Currency = {
   id: string;
   name: string;
+  code?: string; // ISO 4217 code, e.g., "USD"
   order?: number;
 };
 

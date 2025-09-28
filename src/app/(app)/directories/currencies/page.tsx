@@ -23,6 +23,7 @@ import {
   where,
 } from "firebase/firestore";
 import type { Currency } from "@/types/entities";
+import { ISO_CURRENCIES } from "@/data/iso-currencies";
 
 const MAX_ORDER_VALUE = Number.MAX_SAFE_INTEGER;
 
@@ -39,7 +40,7 @@ export default function CurrenciesPage() {
   const { ownerUid } = useAuth();
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [newName, setNewName] = useState("");
-  const [editing, setEditing] = useState<Record<string, string>>({});
+  const [editing, setEditing] = useState<Record<string, { name: string; code: string } | undefined>>({});
   const [confirm, setConfirm] = useState<{ id: string; name: string } | null>(null);
   const [pendingAdd, setPendingAdd] = useState(false);
   const [blocked, setBlocked] = useState<{ name: string; count: number } | null>(null);
@@ -59,6 +60,7 @@ export default function CurrenciesPage() {
           return {
             id: d.id,
             name: data.name,
+            code: data.code || undefined,
             order: typeof data.order === "number" ? data.order : undefined,
           } as Currency;
         })
@@ -96,12 +98,13 @@ export default function CurrenciesPage() {
   }
 
   async function saveEdit(id: string) {
-    const draft = editing[id]?.trim();
-    if (!draft) {
+    const draft = editing[id];
+    const draftName = draft?.name?.trim();
+    if (!draftName) {
       return;
     }
-    await updateDoc(doc(db, Collections.Currencies, id), { name: draft });
-    setEditing((state) => ({ ...state, [id]: "" }));
+    await updateDoc(doc(db, Collections.Currencies, id), { name: draftName, code: draft?.code || null } as any);
+    setEditing((state) => ({ ...state, [id]: undefined }));
   }
 
   async function deleteCurrency(id: string) {
@@ -152,18 +155,27 @@ export default function CurrenciesPage() {
 
       <div className="mt-6 grid gap-2">
         {orderedCurrencies.map((currency) => {
-          const draftName = editing[currency.id] ?? "";
-          const isEditing = Boolean(draftName);
+          const draft = editing[currency.id];
+          const isEditing = Boolean(draft);
+          const draftName = draft?.name ?? "";
+          const draftCode = draft?.code ?? "";
           return (
             <div key={currency.id} className="flex items-center gap-2 border rounded-md p-2 pl-4">
               {isEditing ? (
                 <Input
                   value={draftName}
-                  onChange={(e) => setEditing((state) => ({ ...state, [currency.id]: e.target.value }))}
+                  onChange={(e) => setEditing((state) => ({ ...state, [currency.id]: { name: e.target.value, code: draftCode } }))}
                 />
               ) : (
-                <div className="flex-1">{currency.name}</div>
+                <div className="flex-1">
+                  <div className="font-medium">{currency.name}</div>
+                </div>
               )}
+              <CurrencyCodeSelect
+                value={isEditing ? draftCode : (currency.code || "")}
+                onChange={(code) => setEditing((state) => ({ ...state, [currency.id]: { name: draftName || currency.name, code } }))}
+                disabled={!isEditing}
+              />
               {isEditing ? (
                 <>
                   <Button
@@ -173,7 +185,7 @@ export default function CurrenciesPage() {
                   >
                     Сохранить
                   </Button>
-                  <Button variant="ghost" onClick={() => setEditing((state) => ({ ...state, [currency.id]: "" }))}>
+                  <Button variant="ghost" onClick={() => setEditing((state) => ({ ...state, [currency.id]: undefined }))}>
                     Отмена
                   </Button>
                 </>
@@ -181,7 +193,7 @@ export default function CurrenciesPage() {
                 <>
                   <Button
                     variant="outline"
-                    onClick={() => setEditing((state) => ({ ...state, [currency.id]: currency.name }))}
+                    onClick={() => setEditing((state) => ({ ...state, [currency.id]: { name: currency.name, code: currency.code || "" } }))}
                   >
                     Редактировать
                   </Button>
@@ -216,6 +228,64 @@ export default function CurrenciesPage() {
         }
         onOpenChange={(open) => !open && setBlocked(null)}
       />
+    </div>
+  );
+}
+
+function CurrencyCodeSelect({ value, onChange, disabled }: { value: string; onChange: (code: string) => void; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const options = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return ISO_CURRENCIES;
+    return ISO_CURRENCIES.filter((c) => c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q));
+  }, [query]);
+
+  const label = value ? `${value} — ${ISO_CURRENCIES.find((c) => c.code === value)?.name ?? ""}` : "Выбрать код";
+
+  return (
+    <div className="flex items-center gap-2 shrink-0">
+      <div className="text-xs text-muted-foreground">Код</div>
+      <div className="relative">
+        <div>
+          <button type="button" className="border rounded-md px-2 h-8 text-sm disabled:opacity-50" onClick={() => !disabled && setOpen((v) => !v)} disabled={disabled}>
+            {label}
+          </button>
+        </div>
+        {open ? (
+          <div className="absolute z-10 mt-1 w-64 rounded-md border bg-popover p-2 shadow-md">
+            <input
+              className="w-full h-8 border rounded px-2 text-sm mb-2"
+              placeholder="Поиск..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <div className="max-h-64 overflow-auto">
+              {options.map((opt) => (
+                <button
+                  key={opt.code}
+                  type="button"
+                  className="w-full text-left px-2 py-1.5 text-sm hover:bg-muted"
+                  onClick={() => {
+                    onChange(opt.code);
+                    setOpen(false);
+                  }}
+                >
+                  <span className="font-mono mr-2">{opt.code}</span>
+                  <span className="text-muted-foreground">{opt.name}</span>
+                </button>
+              ))}
+              {options.length === 0 ? (
+                <div className="py-4 text-center text-sm text-muted-foreground">Ничего не найдено</div>
+              ) : null}
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <button type="button" className="text-sm text-muted-foreground" onClick={() => onChange("")}>Очистить</button>
+              <button type="button" className="text-sm" onClick={() => setOpen(false)}>Закрыть</button>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
           </header>
         ) : null}
-        <main className="min-w-0 flex-1 px-4 pb-6 pt-4 sm:px-6 sm:pb-8 sm:pt-6 lg:px-10 lg:py-8">
+        <main className="min-w-0 flex-1 px-4 pb-4 pt-4 sm:px-6 sm:pb-3 sm:pt-2.5 lg:px-10">
           {children}
         </main>
       </div>

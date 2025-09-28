@@ -40,7 +40,7 @@ type SidebarProps = {
 export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [directoriesOpen, setDirectoriesOpen] = useState(true);
   const isTablet = useMediaQuery(`(max-width: ${MQBreakpoint.Md - 1}px)`);
   const isMobile = useMediaQuery(`(max-width: ${MQBreakpoint.Sm - 1}px)`);
@@ -84,7 +84,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
   const sidebarClasses = useMemo(
     () =>
       cn(
-        "flex h-full w-64 flex-col border-r bg-sidebar px-3 py-4 text-sidebar-foreground transition-transform lg:h-screen lg:w-60 lg:translate-x-0",
+        "flex h-full w-60 flex-col border-r bg-sidebar px-2.5 py-4 text-sidebar-foreground transition-transform lg:h-screen lg:w-58 lg:translate-x-0",
         isTablet
           ? [
               "fixed left-0 top-0 z-40 h-screen shadow-xl duration-200",
@@ -191,7 +191,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
             >
               <span className="flex items-center gap-2">
                 <span aria-hidden>⚙️</span>
-                <span>Настройки</span>
+                <span>{user?.email ?? "Аккаунт"}</span>
               </span>
             </Button>
           </DropdownMenuTrigger>
