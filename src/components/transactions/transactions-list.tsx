@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useId } from "react";
 import { db } from "@/lib/firebase";
+import { ru } from "date-fns/locale";
 import { applyBalanceAdjustments } from "@/lib/account-balances";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
@@ -545,6 +546,7 @@ function DateRangePicker({
             numberOfMonths={2}
             defaultMonth={temp.from ?? value.from ?? new Date()}
             className="rounded-md"
+            locale={ru}
           />
           <div className="w-48 md:w-56 grid gap-2">
             <div className="text-sm font-medium">Быстрый выбор</div>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { ru } from "date-fns/locale";
 
 export function DatePicker({
   value,
@@ -26,7 +27,12 @@ export function DatePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="p-2">
-        <Calendar mode="single" selected={value} onSelect={(d) => d && (onChange(d), setOpen(false))} />
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={(d) => d && (onChange(d), setOpen(false))}
+          locale={ru}
+        />
       </PopoverContent>
     </Popover>
   );

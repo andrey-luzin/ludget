@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "@/components/ui/calendar"
 import { useEffect } from "react"
+import { ru } from "date-fns/locale";
 
 export default function Home() {
   const [date, setDate] = React.useState<Date | undefined>(undefined)
@@ -84,6 +85,7 @@ export default function Home() {
                 selected={date}
                 onSelect={setDate}
                 className="rounded-md border p-2"
+                locale={ru}
               />
             </div>
           </section>
