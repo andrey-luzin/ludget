@@ -84,10 +84,10 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
   const sidebarClasses = useMemo(
     () =>
       cn(
-        "flex h-full w-60 flex-col border-r bg-sidebar px-2.5 py-4 text-sidebar-foreground transition-transform lg:h-screen lg:w-58 lg:translate-x-0",
+        "flex w-60 flex-col overflow-auto border-r bg-sidebar px-2.5 py-4 text-sidebar-foreground transition-transform lg:w-58 lg:translate-x-0 h-screen",
         isTablet
           ? [
-              "fixed left-0 top-0 z-40 h-screen shadow-xl duration-200",
+              "fixed left-0 top-0 z-40 shadow-xl duration-200 w-80",
               effectiveMobileOpen ? "translate-x-0" : "-translate-x-full",
             ]
           : "sticky top-0",

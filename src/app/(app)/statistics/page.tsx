@@ -165,7 +165,7 @@ export default function StatisticsPage() {
   const palette = useChartPalette();
 
   return (
-    <div className="p-4 lg:p-6 space-y-4">
+    <div className="space-y-4">
       {ratesError ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm flex items-start justify-between gap-3">
           <div>

@@ -35,12 +35,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [isMobile, mobileSidebarOpen]);
 
   return (
-    <div className="relative flex min-h-screen w-full bg-muted/30">
+    <div className="relative flex min-h-screen w-full bg-muted/30 h-screen">
       <Sidebar
         mobileOpen={isMobile ? mobileSidebarOpen : undefined}
         onMobileOpenChange={isMobile ? setMobileSidebarOpen : undefined}
       />
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex min-h-screen flex-1 flex-col overflow-auto">
         {isMobile ? (
           <header className="sticky top-0 z-10 flex items-center border-b bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <Button
@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
           </header>
         ) : null}
-        <main className="min-w-0 flex-1 px-4 pb-4 pt-4 sm:px-6 sm:pb-3 sm:pt-2.5 lg:px-10">
+        <main className="min-w-0 flex-1 px-4 py-4 sm:px-6 sm:pb-8 sm:pt-6 lg:px-10 lg:py-6">
           {children}
         </main>
       </div>
