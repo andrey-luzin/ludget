@@ -222,33 +222,104 @@ export function TransactionsList({
                   <div className="space-y-1 sm:flex sm:flex-1 sm:items-center sm:gap-3 sm:space-y-0">
                     {type === "expense" ? (
                       <>
+                        {/* Account indicator (icon or truncated name) */}
+                        {accIcon(it.accountId) ? (
+                          <img
+                            src={accIcon(it.accountId)!}
+                            alt=""
+                            title={accName(it.accountId)}
+                            className="inline-block h-4 w-4 align-[-2px] object-contain"
+                          />
+                        ) : (
+                          <span
+                            title={accName(it.accountId)}
+                            className="inline-block max-w-6 -mr-2 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            style={{ color: accColor(it.accountId) || undefined }}
+                          >
+                            {accName(it.accountId)}
+                          </span>
+                        )}
                         <span className="font-medium">{catName(it.categoryId)}</span>
                         {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
                       </>
                     ) : type === "income" ? (
                       <>
+                        {/* Account indicator (icon or truncated name) */}
+                        {accIcon(it.accountId) ? (
+                          <img
+                            src={accIcon(it.accountId)!}
+                            alt=""
+                            title={accName(it.accountId)}
+                            className="inline-block h-4 w-4 align-[-2px] object-contain"
+                          />
+                        ) : (
+                          <span
+                            title={accName(it.accountId)}
+                            className="inline-block max-w-6 -mr-2 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            style={{ color: accColor(it.accountId) || undefined }}
+                          >
+                            {accName(it.accountId)}
+                          </span>
+                        )}
+                        <span className="mx-1.5 text-muted-foreground">·</span>
                         <span className="font-medium">{srcName(it.sourceId)}</span>
                         {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
                       </>
                     ) : type === "transfer" ? (
                       <>
                         {accIcon(it.fromAccountId) ? (
-                          <img src={accIcon(it.fromAccountId)!} alt="" className="inline-block h-4 w-4 mr-1 align-[-2px] object-contain" />
-                        ) : null}
-                        <span className="font-medium" style={{ color: accColor(it.fromAccountId) || undefined }}>{accName(it.fromAccountId)}</span>
+                          <img
+                            src={accIcon(it.fromAccountId)!}
+                            alt=""
+                            title={accName(it.fromAccountId)}
+                            className="inline-block h-4 w-4 align-[-2px] object-contain"
+                          />
+                        ) : (
+                          <span
+                            title={accName(it.fromAccountId)}
+                            className="inline-block max-w-6 -mr-2 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            style={{ color: accColor(it.fromAccountId) || undefined }}
+                          >
+                            {accName(it.fromAccountId)}
+                          </span>
+                        )}
                         <span className="mx-1.5">→</span>
                         {accIcon(it.toAccountId) ? (
-                          <img src={accIcon(it.toAccountId)!} alt="" className="inline-block h-4 w-4 mr-1 align-[-2px] object-contain" />
-                        ) : null}
-                        <span className="font-medium" style={{ color: accColor(it.toAccountId) || undefined }}>{accName(it.toAccountId)}</span>
+                          <img
+                            src={accIcon(it.toAccountId)!}
+                            alt=""
+                            title={accName(it.toAccountId)}
+                            className="inline-block h-4 w-4 align-[-2px] object-contain"
+                          />
+                        ) : (
+                          <span
+                            title={accName(it.toAccountId)}
+                            className="inline-block max-w-6 -mr-2 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            style={{ color: accColor(it.toAccountId) || undefined }}
+                          >
+                            {accName(it.toAccountId)}
+                          </span>
+                        )}
                         {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
                       </>
                     ) : (
                       <>
                         {accIcon(it.accountId) ? (
-                          <img src={accIcon(it.accountId)!} alt="" className="inline-block h-4 w-4 mr-1 align-[-2px] object-contain" />
-                        ) : null}
-                        <span className="font-medium" style={{ color: accColor(it.accountId) || undefined }}>{accName(it.accountId)}</span>
+                          <img
+                            src={accIcon(it.accountId)!}
+                            alt=""
+                            title={accName(it.accountId)}
+                            className="inline-block h-4 w-4 align-[-2px] object-contain"
+                          />
+                        ) : (
+                          <span
+                            title={accName(it.accountId)}
+                            className="inline-block max-w-6 -mr-2 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            style={{ color: accColor(it.accountId) || undefined }}
+                          >
+                            {accName(it.accountId)}
+                          </span>
+                        )}
                         {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
                       </>
                     )}

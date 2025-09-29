@@ -549,16 +549,6 @@ function AccountItem({
                 value={draft.amount}
                 onChange={(e) => updateDraft(draft.currencyId, e.target.value)}
               />
-              <span
-                className={cn(
-                  "px-1.5 py-0.5 rounded text-sm font-semibold",
-                  amount >= 0
-                    ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-400/10"
-                    : "text-rose-700 bg-rose-50 dark:text-rose-400 dark:bg-rose-400/10"
-                )}
-              >
-                {amount}
-              </span>
             </div>
           );
         })}
