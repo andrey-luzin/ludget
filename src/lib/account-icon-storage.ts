@@ -69,7 +69,7 @@ const resolveExt = (file: File) => {
 };
 
 export const buildAccountIconKey = (ownerUid: string, accountId: string, ext: string) =>
-  `ludget/icons/${ownerUid}/${accountId}${ext}`;
+  `icons/${ownerUid}/${accountId}${ext}`;
 
 const buildPublicUrl = (env: Env, key: string) => {
   if (env.publicBase) {
@@ -97,11 +97,14 @@ export async function uploadAccountIcon(ownerUid: string, accountId: string, fil
   const ext = resolveExt(file);
   const key = buildAccountIconKey(ownerUid, accountId, ext);
 
+  // Normalize Body to a byte array to avoid ReadableStream incompatibilities
+  const bytes = new Uint8Array(await file.arrayBuffer());
+
   await client.send(
     new PutObjectCommand({
       Bucket: env.bucket,
       Key: key,
-      Body: file,
+      Body: bytes,
       CacheControl: "public,max-age=31536000,immutable",
       ContentType: file.type || undefined,
     })

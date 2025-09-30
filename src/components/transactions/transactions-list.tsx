@@ -220,7 +220,7 @@ export function TransactionsList({
                   key={it.id}
                   className="flex flex-col gap-3 rounded-md border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="space-y-1 flex sm:flex-1 sm:items-center gap-2 sm:gap-3 sm:space-y-0">
+                  <div className="space-y-1 flex sm:flex-1 sm:items-center gap-1 sm:gap-2 sm:space-y-0">
                     {type === "expense" ? (
                       <>
                         {/* Account indicator (icon or truncated name) */}
@@ -229,12 +229,12 @@ export function TransactionsList({
                             src={accIcon(it.accountId)!}
                             alt=""
                             title={accName(it.accountId)}
-                            className="inline-block h-4 w-4 align-[-2px] object-contain"
+                            className="inline-block h-6 w-6 align-[-2px] object-contain"
                           />
                         ) : (
                           <span
                             title={accName(it.accountId)}
-                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-2 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
                             style={{ color: accColor(it.accountId) || undefined }}
                           >
                             {accName(it.accountId)}
@@ -251,12 +251,12 @@ export function TransactionsList({
                             src={accIcon(it.accountId)!}
                             alt=""
                             title={accName(it.accountId)}
-                            className="inline-block h-4 w-4 align-[-2px] object-contain"
+                            className="inline-block h-6 w-6 align-[-2px] object-contain"
                           />
                         ) : (
                           <span
                             title={accName(it.accountId)}
-                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-2 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
                             style={{ color: accColor(it.accountId) || undefined }}
                           >
                             {accName(it.accountId)}
@@ -273,12 +273,12 @@ export function TransactionsList({
                             src={accIcon(it.fromAccountId)!}
                             alt=""
                             title={accName(it.fromAccountId)}
-                            className="inline-block h-4 w-4 align-[-2px] object-contain"
+                            className="inline-block h-6 w-6 align-[-2px] object-contain"
                           />
                         ) : (
                           <span
                             title={accName(it.fromAccountId)}
-                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-2 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
                             style={{ color: accColor(it.fromAccountId) || undefined }}
                           >
                             {accName(it.fromAccountId)}
@@ -290,12 +290,12 @@ export function TransactionsList({
                             src={accIcon(it.toAccountId)!}
                             alt=""
                             title={accName(it.toAccountId)}
-                            className="inline-block h-4 w-4 align-[-2px] object-contain"
+                            className="inline-block h-6 w-6 align-[-2px] object-contain"
                           />
                         ) : (
                           <span
                             title={accName(it.toAccountId)}
-                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-2 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
                             style={{ color: accColor(it.toAccountId) || undefined }}
                           >
                             {accName(it.toAccountId)}
@@ -310,12 +310,12 @@ export function TransactionsList({
                             src={accIcon(it.accountId)!}
                             alt=""
                             title={accName(it.accountId)}
-                            className="inline-block h-4 w-4 align-[-2px] object-contain"
+                            className="inline-block h-6 w-6 align-[-2px] object-contain"
                           />
                         ) : (
                           <span
                             title={accName(it.accountId)}
-                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-2 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
                             style={{ color: accColor(it.accountId) || undefined }}
                           >
                             {accName(it.accountId)}

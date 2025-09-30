@@ -289,8 +289,10 @@ function AccountItem({
   const iconFileId = useId();
 
   const handleIconFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const inputEl = e.currentTarget;
+    const file = inputEl.files?.[0];
     if (!file || !ownerUid) return;
+    
     try {
       setUploadingIcon(true);
       const { url } = await uploadAccountIcon(ownerUid, account.id, file);
@@ -300,7 +302,9 @@ function AccountItem({
     } finally {
       setUploadingIcon(false);
       // reset input so same file can be re-selected
-      e.currentTarget.value = "";
+      if (inputEl) {
+        inputEl.value = "";
+      }
     }
   };
 
@@ -448,7 +452,7 @@ function AccountItem({
         {!showBalancesEditor ? dragHandle : null}
         <div className="text-base font-medium flex-1 flex items-center gap-2" style={{ color: account.color || undefined }}>
           {account.iconUrl ? (
-            <img src={account.iconUrl} alt="" className="h-5 w-5 rounded-sm object-contain" />
+            <img src={account.iconUrl} alt="" className="h-6 w-6 rounded-sm object-contain" />
           ) : null}
           <span>{account.name}</span>
         </div>
