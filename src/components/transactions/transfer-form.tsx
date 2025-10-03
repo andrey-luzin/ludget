@@ -196,7 +196,7 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
           <div className="relative">
             <Input
               id={amountId}
-              className={cn("w-full sm:w-48", amountPreview ? "pr-16" : undefined)}
+              className={cn("w-full sm:w-56", amountPreview ? "pr-16" : undefined)}
               type="text"
               placeholder="0.0"
               value={amount}

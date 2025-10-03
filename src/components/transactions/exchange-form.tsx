@@ -222,7 +222,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
           <div className="relative">
             <Input
               id={fromAmtId}
-              className={cn("w-full sm:w-48", amountFromPreview ? "pr-16" : undefined)}
+              className={cn("w-full sm:w-56", amountFromPreview ? "pr-16" : undefined)}
               type="text"
               placeholder="0.0"
               value={amountFrom}
@@ -259,7 +259,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
           <div className="relative">
             <Input
               id={toAmtId}
-              className={cn("w-full sm:w-48", amountToPreview ? "pr-16" : undefined)}
+              className={cn("w-full sm:w-56", amountToPreview ? "pr-16" : undefined)}
               type="text"
               placeholder="0.0"
               value={amountTo}
