@@ -223,6 +223,7 @@ export function Combobox({
                     style={option.style}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     onClick={() => handleSelect(option.value)}
+                    title={option.label}
                   >
                     <span className="flex min-w-0 flex-1 items-center gap-2">
                       <span className="flex min-w-0 flex-col text-left">

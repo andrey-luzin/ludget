@@ -137,8 +137,16 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
     }
   }
 
+  function handleMetaEnterSubmit(e: React.KeyboardEvent) {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      submit();
+    }
+  }
+
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4" onKeyDownCapture={handleMetaEnterSubmit}>
       <div className="flex flex-col gap-3 md:flex-row md:items-end">
         <div className="grid gap-1">
           <Label htmlFor={fromSelId}>Счет откуда</Label>

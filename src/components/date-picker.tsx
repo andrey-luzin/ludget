@@ -31,6 +31,7 @@ export function DatePicker({
           mode="single"
           selected={value}
           onSelect={(d) => d && (onChange(d), setOpen(false))}
+          defaultMonth={value}
           locale={ru}
         />
       </PopoverContent>
