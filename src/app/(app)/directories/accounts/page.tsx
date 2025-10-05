@@ -280,7 +280,7 @@ function AccountItem({
   const editNameId = useId();
   const colorId = useId();
   const [serverBalances, setServerBalances] = useState<Balance[]>([]);
-  const [drafts, setDrafts] = useState<{ currencyId: string; amount: string; balanceId?: string }[]>([]);
+  const [drafts, setDrafts] = useState<{ currencyId: string; amount: string; balanceId?: string; touched?: boolean }[]>([]);
   const [saving, setSaving] = useState(false);
   const [showBalancesEditor, setShowBalancesEditor] = useState(false);
   const [editName, setEditName] = useState(account.name);
@@ -362,18 +362,24 @@ function AccountItem({
       return currencies.map((currency) => {
         const previous = prevMap.get(currency.id);
         const server = serverMap.get(currency.id);
-        const amount = previous ? previous.amount : server ? String(server.amount) : "0";
+        // Prefer server amount unless the user has already edited this draft.
+        const amount = previous?.touched
+          ? previous.amount
+          : server
+            ? String(server.amount)
+            : previous?.amount ?? "0";
         return {
           currencyId: currency.id,
           amount,
           balanceId: server?.id,
+          touched: previous?.touched ?? false,
         };
       });
     });
   }, [currencies, serverBalances]);
 
   function updateDraft(currencyId: string, amount: string) {
-    setDrafts((ds) => ds.map((d) => (d.currencyId === currencyId ? { ...d, amount } : d)));
+    setDrafts((ds) => ds.map((d) => (d.currencyId === currencyId ? { ...d, amount, touched: true } : d)));
   }
 
   function currencyLabel(id: string) {
