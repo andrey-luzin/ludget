@@ -8,6 +8,7 @@ import { Alert } from "@/components/ui/alert";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections, SubCollections } from "@/types/collections";
+import { PenLine, Trash2 } from "lucide-react";
 import {
   addDoc,
   collection,
@@ -194,11 +195,14 @@ export default function CurrenciesPage() {
                   <Button
                     variant="outline"
                     onClick={() => setEditing((state) => ({ ...state, [currency.id]: { name: currency.name, code: currency.code || "" } }))}
+                    title="Редактировать"
                   >
-                    Редактировать
+                    <PenLine className="h-4 w-4" />
+                    <span className="max-lg:hidden">Редактировать</span>
                   </Button>
-                  <Button variant="destructive" onClick={() => askDeleteCurrency(currency)}>
-                    Удалить
+                  <Button variant="destructive" onClick={() => askDeleteCurrency(currency)} title="Удалить">
+                    <Trash2 className="h-4 w-4" />
+                    <span className="max-lg:hidden">Удалить</span>
                   </Button>
                 </>
               )}

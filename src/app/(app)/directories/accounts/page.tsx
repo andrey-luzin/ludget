@@ -5,7 +5,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { DndContext, DragEndEvent, PointerSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical } from "lucide-react";
+import { GripVertical, PenLine, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -462,10 +462,20 @@ function AccountItem({
           ) : null}
           <span>{account.name}</span>
         </div>
-        <Button variant="secondary" onClick={() => setShowBalancesEditor((s) => !s)}>
-          {showBalancesEditor ? "Свернуть" : "Править"}
+        <Button
+          variant="secondary"
+          onClick={() => setShowBalancesEditor((s) => !s)}
+          title={showBalancesEditor ? "Свернуть" : "Править"}
+        >
+          <PenLine className="h-4 w-4" />
+          <span className={cn({ "max-lg:hidden": !showBalancesEditor })}>
+            {showBalancesEditor ? "Свернуть" : "Править"}
+          </span>
         </Button>
-        <Button variant="destructive" onClick={onAskDelete}>Удалить</Button>
+        <Button variant="destructive" onClick={onAskDelete} title="Удалить">
+          <Trash2 className="h-4 w-4" />
+          <span className="max-lg:hidden">Удалить</span>
+        </Button>
       </div>
 
       {/* Collapsed primitive view */}
@@ -539,8 +549,16 @@ function AccountItem({
                 className="max-w-xs"
               />
               {account.iconUrl ? (
-                <Button type="button" variant="ghost" size="sm" onClick={handleIconDelete} disabled={uploadingIcon}>
-                  Удалить
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleIconDelete}
+                  disabled={uploadingIcon}
+                  title="Удалить иконку"
+                >
+                  <Trash2 className="h-4 w-4 mr-1 text-destructive" />
+                  <span className="lg:hidden">Удалить</span>
                 </Button>
               ) : null}
             </div>

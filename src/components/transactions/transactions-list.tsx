@@ -10,6 +10,7 @@ import { collection, deleteDoc, doc, onSnapshot, orderBy, query, where } from "f
 import { formatISO, parseISO, format, startOfDay, endOfDay, startOfMonth } from "date-fns";
 import { subDays } from "date-fns/subDays";
 import { Button } from "@/components/ui/button";
+import { PenLine, Trash2 } from "lucide-react";
 import { AlertModal } from "@/components/ui/alert-modal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -343,15 +344,19 @@ export function TransactionsList({
                       variant="ghost"
                       onClick={() => onEdit?.(it)}
                       disabled={editingId === it.id}
+                      title="Редактировать"
                     >
-                      Редактировать
+                      <PenLine className="h-4 w-4" />
+                      <span className="max-xl:hidden">Редактировать</span>
                     </Button>
                     <Button
                       variant="destructive"
                       onClick={() => setConfirmTx(it)}
                       disabled={editingId === it.id}
+                      title="Удалить"
                     >
-                      Удалить
+                      <Trash2 className="h-4 w-4" />
+                      <span className="max-xl:hidden">Удалить</span>
                     </Button>
                   </div>
                 </div>

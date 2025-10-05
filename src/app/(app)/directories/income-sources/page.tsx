@@ -394,7 +394,7 @@ function SortableRootSource({
                 aria-label="Удалить"
                 onClick={() => onAskDelete(source)}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
           </div>
@@ -447,7 +447,7 @@ function SortableRootSource({
                         aria-label="Удалить"
                         onClick={() => onAskDelete(child)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </>
