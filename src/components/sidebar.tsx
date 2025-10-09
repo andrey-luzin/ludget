@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, ChevronRight, X } from "lucide-react";
+import { ChevronDown, X, ChevronsUpDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -150,11 +150,10 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
                 <span aria-hidden>📚</span>
                 <span>Справочники</span>
               </span>
-              {directoriesOpen ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
+              <ChevronDown className={cn(
+                "h-4 w-4 transition-transform",
+                { '-rotate-90': !directoriesOpen}
+              )}/>
             </button>
             {directoriesOpen ? (
               <div className="ml-2 flex flex-col gap-1">
@@ -183,18 +182,19 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
         </nav>
         <div className="mt-auto pt-4 space-y-2">
           <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full justify-between text-sm font-medium text-muted-foreground"
-            >
-              <span className="flex items-center gap-2">
-                <span aria-hidden>⚙️</span>
-                <span>{user?.email ?? "Аккаунт"}</span>
-              </span>
-            </Button>
-          </DropdownMenuTrigger>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full justify-between text-sm font-medium text-muted-foreground"
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <span aria-hidden>⚙️</span>
+                  <span>{user?.email ?? "Аккаунт"}</span>
+                  <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-75" />
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
             <DropdownMenuContent
               side={!isMobile ? "right" : "top"}
               align="end"
