@@ -110,3 +110,14 @@ function filterRates(rates: Rates, needed?: string[]) {
   }
   return out;
 }
+
+// Convert from txCurrency to base using rates map where: 1 base = rates[QUOTE] units of QUOTE.
+export function convertToBaseFactor(txCurrencyCode: string, rates: Record<string, number>, baseCode: string) {
+  if (!txCurrencyCode || !rates) return 1;
+  if (txCurrencyCode.toUpperCase() === baseCode.toUpperCase()) return 1;
+  const r = rates[txCurrencyCode] ?? rates[txCurrencyCode.toUpperCase()];
+  if (!r || r === 0) return 1;
+  // rates map is: 1 base = r units of txCurrency
+  // So X txCurrency = X / r in base
+  return 1 / r;
+}

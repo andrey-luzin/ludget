@@ -11,7 +11,10 @@ import type { Category, Currency } from "@/types/entities";
 import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { CategoryMultiSelect } from "@/components/statistics/category-multiselect";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
-import { getRatesWithCache } from "@/lib/exchange";
+import { getRatesWithCache, convertToBaseFactor } from "@/lib/exchange";
+import { buildCategoryIndex, getDescendants } from "@/lib/categories";
+import { useChartPalette } from "@/hooks/use-chart-palette";
+import { CategoryListWithPopover } from "@/components/statistics/category-list";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { roundMoneyAmount } from "@/lib/money";
 
@@ -31,7 +34,7 @@ export default function StatisticsPage() {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [targetCurrencyId, setTargetCurrencyId] = useState<string>("");
   const targetCurrency = useMemo(() => currencies.find((c) => c.id === targetCurrencyId) || null, [currencies, targetCurrencyId]);
-  const targetCode = targetCurrency?.code || "RUB";
+  const targetCode = targetCurrency?.code || null;
   const [rates, setRates] = useState<Record<string, number>>({});
   const [ratesError, setRatesError] = useState<string | null>(null);
   const [ratesUpdatedAt, setRatesUpdatedAt] = useState<number | null>(null);
@@ -90,11 +93,13 @@ export default function StatisticsPage() {
     setRatesLoading(true);
     try {
       const neededCodes = currencies.map((c) => c.code).filter(Boolean) as string[];
-      const res = await getRatesWithCache(targetCode, { force, neededCodes });
-      setRates(res.rates);
-      setRatesUpdatedAt(res.updatedAt);
-      if (res.error) {
-        setRatesError("Не удалось обновить курсы. Показаны кэшированные значения.");
+      if (targetCode) {
+        const res = await getRatesWithCache(targetCode, { force, neededCodes });
+        setRates(res.rates);
+        setRatesUpdatedAt(res.updatedAt);
+        if (res.error) {
+          setRatesError("Не удалось обновить курсы. Показаны кэшированные значения.");
+        }
       }
     } catch (e: any) {
       setRatesError(e?.message || "Не удалось загрузить курс валют.");
@@ -104,14 +109,12 @@ export default function StatisticsPage() {
   }
 
   useEffect(() => {
-    let cancelled = false;
     async function load() {
       await refreshRates(false);
     }
-    if (targetCode) load();
-    return () => {
-      cancelled = true;
-    };
+    if (targetCode) {
+      load();
+    }
   }, [targetCode]);
 
   const from = useMemo(() => dateRange.from ?? new Date(0), [dateRange]);
@@ -151,10 +154,12 @@ export default function StatisticsPage() {
     for (const it of filtered) {
       const id = it.categoryId ?? "__uncat__";
       const txCurCode = codeByCurrencyId.get((it as any).currencyId) || targetCode;
-      const factor = convertToBaseFactor(txCurCode, rates, targetCode);
-      const converted = Number(it.amount || 0) * factor;
-      const rounded = Math.round(converted * 100) / 100;
-      byId.set(id, (byId.get(id) || 0) + rounded);
+      if (txCurCode && targetCode) {
+        const factor = convertToBaseFactor(txCurCode, rates, targetCode);
+        const converted = Number(it.amount || 0) * factor;
+        const rounded = Math.round(converted * 100) / 100;
+        byId.set(id, (byId.get(id) || 0) + rounded);
+      }
     }
     const data = Array.from(byId.entries()).map(([id, value]) => ({ id, name: catIndex.byId.get(id)?.name ?? "Без категории", value }));
     data.sort((a, b) => b.value - a.value);
@@ -166,6 +171,7 @@ export default function StatisticsPage() {
 
   return (
     <div className="space-y-4">
+      <h1 className="text-2xl font-semibold">Статистика</h1>
       {ratesError ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm flex items-start justify-between gap-3">
           <div>
@@ -226,7 +232,7 @@ export default function StatisticsPage() {
             </div>
             <TabsContent value="categories" className="mt-2 p-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                <div className="h-[280px]">
+                <div className="h-[320px] sm:h-[520px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={grouped} dataKey="value" nameKey="name" innerRadius={60} stroke="hsl(var(--card))" strokeWidth={1}>
@@ -238,17 +244,14 @@ export default function StatisticsPage() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <ul className="space-y-2">
-                  {grouped.map((s, idx) => (
-                    <li key={s.id} className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-muted-foreground">
-                        <span className="inline-block h-3 w-3 rounded-sm" style={{ backgroundColor: palette[idx % palette.length] }} />
-                        {s.name}
-                      </span>
-                      <span className="font-medium">{`${roundMoneyAmount(s.value)} ${targetCode}`}</span>
-                    </li>
-                  ))}
-                </ul>
+                <CategoryListWithPopover
+                  data={grouped}
+                  palette={palette}
+                  items={filtered}
+                  catIndex={catIndex}
+                  codeByCurrencyId={codeByCurrencyId}
+                  targetCode={targetCode || undefined}
+                />
               </div>
             </TabsContent>
           </Tabs>
@@ -264,81 +267,4 @@ function resetFilters(setDateRange: (r: DateRange) => void, setCategories: (v: s
   setCategories([]);
 }
 
-function buildCategoryIndex(categories: Category[]) {
-  const byId = new Map<string, Category>();
-  for (const c of categories) byId.set(c.id, c);
-  const childrenOf = new Map<string | null, Category[]>();
-  for (const c of categories) {
-    const parentKey = c.parentId && byId.has(c.parentId) ? c.parentId : null;
-    const arr = childrenOf.get(parentKey) ?? [];
-    arr.push(c);
-    childrenOf.set(parentKey, arr);
-  }
-  return { byId, childrenOf } as const;
-}
-
-function getDescendants(id: string, childrenOf: Map<string | null, Category[]>) {
-  const out: string[] = [];
-  const walk = (x: string) => {
-    const kids = childrenOf.get(x) ?? [];
-    for (const k of kids) {
-      out.push(k.id);
-      walk(k.id);
-    }
-  };
-  walk(id);
-  return out;
-}
-
-function useChartPalette() {
-  const [colors, setColors] = useState<string[]>([]);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const resolveColor = (cssVar: string, fallback: string) => {
-      const el = document.createElement("span");
-      el.style.color = `var(${cssVar}, ${fallback})`;
-      document.body.appendChild(el);
-      const rgb = getComputedStyle(el).color || fallback;
-      el.remove();
-      return rgb;
-    };
-
-    const compute = () => {
-      const next = [
-        resolveColor("--primary", "rgb(56, 96, 255)"),
-        resolveColor("--chart-1", "rgb(56, 96, 255)"),
-        resolveColor("--chart-2", "rgb(56, 186, 172)"),
-        resolveColor("--chart-3", "rgb(186, 56, 230)"),
-        resolveColor("--chart-4", "rgb(255, 170, 32)"),
-        resolveColor("--chart-5", "rgb(240, 85, 70)"),
-        resolveColor("--muted-foreground", "rgb(120, 120, 120)"),
-      ];
-      setColors(next);
-    };
-
-    compute();
-
-    const obs = new MutationObserver((muts) => {
-      for (const m of muts) {
-        if (m.type === "attributes" && m.attributeName === "class") {
-          compute();
-          break;
-        }
-      }
-    });
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
-  return colors.length ? colors : ["#3860FF", "#3860FF", "#38BAAC", "#BA38E6", "#FFAA20", "#F05546", "#777777"];
-}
-
-function convertToBaseFactor(txCurrencyCode: string, rates: Record<string, number>, baseCode: string) {
-  if (!txCurrencyCode || !rates) return 1;
-  if (txCurrencyCode === baseCode) return 1;
-  const r = rates[txCurrencyCode];
-  if (!r || r === 0) return 1;
-  // rates map is: 1 base = r units of txCurrency
-  // So X txCurrency = X / r in base
-  return 1 / r;
-}
+// helpers moved to lib/components
