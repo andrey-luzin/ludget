@@ -5,8 +5,26 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { roundMoneyAmount } from "@/lib/money";
 import type { Category } from "@/types/entities";
 import { getDescendants } from "@/lib/categories";
+import type { Account } from "@/types/entities";
 
-type Tx = { id: string; amount: number; date: any; categoryId?: string | null };
+type FireTimestamp = { toDate: () => Date };
+type Tx = {
+  id: string;
+  amount: number;
+  date: Date | FireTimestamp | string | number;
+  categoryId?: string | null;
+  accountId?: string | null;
+  currencyId?: string | null;
+  comment?: string | null;
+  createdBy?: string | null;
+};
+
+function normalizeDate(input: Tx["date"]): Date {
+  if (!input) return new Date(0);
+  if (typeof input === "string" || typeof input === "number") return new Date(input);
+  if (typeof (input as any).toDate === "function") return (input as FireTimestamp).toDate();
+  return input as Date;
+}
 
 export function CategoryListWithPopover({
   data,
@@ -15,6 +33,7 @@ export function CategoryListWithPopover({
   catIndex,
   codeByCurrencyId,
   targetCode,
+  accounts,
 }: {
   data: { id: string; name: string; value: number }[];
   palette: string[];
@@ -22,8 +41,11 @@ export function CategoryListWithPopover({
   catIndex: { byId: Map<string, Category>; childrenOf: Map<string | null, Category[]> };
   codeByCurrencyId: Map<string, string>;
   targetCode?: string;
+  accounts: Account[];
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+
+  const accountById = new Map(accounts.map((a) => [a.id, a] as const));
 
   const getAllIdsForGroup = (id: string) => {
     if (id === "__uncat__") return [id];
@@ -39,7 +61,7 @@ export function CategoryListWithPopover({
   };
 
   const formatAmount = (tx: Tx) => {
-    const txCurCode = codeByCurrencyId.get((tx as any).currencyId) || targetCode;
+    const txCurCode = codeByCurrencyId.get(tx.currencyId || "") || targetCode;
     if (!targetCode || !txCurCode) return `${roundMoneyAmount(Number(tx.amount || 0))}`;
     return `${roundMoneyAmount(Number(tx.amount || 0))} ${txCurCode}`;
   };
@@ -59,15 +81,30 @@ export function CategoryListWithPopover({
                 {s.name}
               </button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-[320px] max-h-80 overflow-y-auto p-0">
+            <PopoverContent align="start" className="w-[360px] max-h-80 overflow-y-auto p-0">
               <div className="p-2 border-b text-xs text-muted-foreground">Транзакции</div>
               <ul className="divide-y">
                 {txFor(s.id).map((tx) => {
-                  const d: Date = (tx as any).date?.toDate ? (tx as any).date.toDate() : new Date((tx as any).date);
+                  const d = normalizeDate(tx.date);
+                  const acc = tx.accountId ? accountById.get(tx.accountId) : undefined;
+                  const c = (tx.comment || "").trim();
                   return (
-                    <li key={tx.id} className="p-2 text-sm flex items-center justify-between">
-                      <span className="text-muted-foreground">{d.toLocaleDateString()}</span>
-                      <span className="font-medium">{formatAmount(tx)}</span>
+                    <li key={tx.id} className="p-2 text-sm grid grid-cols-1 gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">{d.toLocaleDateString()}</span>
+                        <span className="font-medium">{formatAmount(tx)}</span>
+                      </div>
+                      {acc ? (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="inline-flex items-center gap-2 text-muted-foreground">
+                            {acc.iconUrl ? <img src={acc.iconUrl} alt="" className="h-4 w-4 object-contain" /> : null}
+                            <span style={{ color: acc.color || undefined }}>{acc.name}</span>
+                          </span>
+                          {c ? (
+                            <span className="text-muted-foreground/80 truncate max-w-[55%]" title={c}>{c}</span>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </li>
                   );
                 })}
@@ -83,4 +120,3 @@ export function CategoryListWithPopover({
     </ul>
   );
 }
-

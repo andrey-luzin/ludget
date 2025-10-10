@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { db } from "@/lib/firebase";
 import { Collections } from "@/types/collections";
-import type { Category, Currency } from "@/types/entities";
+import type { Account, Category, Currency } from "@/types/entities";
 import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { CategoryMultiSelect } from "@/components/statistics/category-multiselect";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
@@ -17,6 +17,7 @@ import { useChartPalette } from "@/hooks/use-chart-palette";
 import { CategoryListWithPopover } from "@/components/statistics/category-list";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { roundMoneyAmount } from "@/lib/money";
+import { AccountsMultiSelect } from "@/components/filters/accounts-multi-select";
 
 type Tx = { id: string; amount: number; date: any; categoryId?: string | null };
 
@@ -31,6 +32,8 @@ export default function StatisticsPage() {
   const { ownerUid } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Tx[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountFilter, setAccountFilter] = useState<string[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [targetCurrencyId, setTargetCurrencyId] = useState<string>("");
   const targetCurrency = useMemo(() => currencies.find((c) => c.id === targetCurrencyId) || null, [currencies, targetCurrencyId]);
@@ -63,6 +66,19 @@ export default function StatisticsPage() {
     );
     const unsub = onSnapshot(q, (snap) => {
       setItems(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Tx[]);
+    });
+    return () => unsub();
+  }, [ownerUid]);
+
+  useEffect(() => {
+    if (!ownerUid) return;
+    const q = query(collection(db, Collections.Accounts), where("ownerUid", "==", ownerUid), orderBy("name"));
+    const unsub = onSnapshot(q, (snap) => {
+      const list = snap.docs.map((d) => {
+        const x = d.data() as any;
+        return { id: d.id, name: x.name, color: x.color, iconUrl: x.iconUrl, createdBy: x.createdBy, order: typeof x.order === "number" ? x.order : undefined } as Account;
+      });
+      setAccounts(list);
     });
     return () => unsub();
   }, [ownerUid]);
@@ -136,12 +152,16 @@ export default function StatisticsPage() {
     const arr = items.filter((it) => {
       const d: Date = it.date?.toDate ? it.date.toDate() : new Date(it.date);
       if (d < from || d > to) return false;
+      if (accountFilter.length) {
+        const set = new Set(accountFilter);
+        if (!set.has((it as any).accountId)) return false;
+      }
       if (!activeCatSet) return true;
       const catId = it.categoryId ?? "";
       return activeCatSet.has(catId);
     });
     return arr;
-  }, [items, from, to, activeCatSet]);
+  }, [items, from, to, activeCatSet, accountFilter]);
 
   const codeByCurrencyId = useMemo(() => {
     const m = new Map<string, string>();
@@ -192,6 +212,10 @@ export default function StatisticsPage() {
         <div className="space-y-2 min-w-64">
           <div className="text-sm text-muted-foreground">Категории</div>
           <CategoryMultiSelect value={selectedCategories} onChange={setSelectedCategories} categories={categories} />
+        </div>
+        <div className="space-y-2 min-w-64">
+          <div className="text-sm text-muted-foreground">Счета</div>
+          <AccountsMultiSelect accounts={accounts} value={accountFilter} onChange={setAccountFilter} />
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" onClick={() => resetFilters(setDateRange, setSelectedCategories)}>
@@ -251,6 +275,7 @@ export default function StatisticsPage() {
                   catIndex={catIndex}
                   codeByCurrencyId={codeByCurrencyId}
                   targetCode={targetCode || undefined}
+                  accounts={accounts}
                 />
               </div>
             </TabsContent>
