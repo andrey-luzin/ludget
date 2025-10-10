@@ -17,16 +17,44 @@ export function useChartPalette() {
     };
 
     const compute = () => {
-      const next = [
-        resolveColor("--primary", "rgb(56, 96, 255)"),
-        resolveColor("--chart-1", "rgb(56, 96, 255)"),
-        resolveColor("--chart-2", "rgb(56, 186, 172)"),
-        resolveColor("--chart-3", "rgb(186, 56, 230)"),
-        resolveColor("--chart-4", "rgb(255, 170, 32)"),
-        resolveColor("--chart-5", "rgb(240, 85, 70)"),
-        resolveColor("--muted-foreground", "rgb(120, 120, 120)"),
+      const varNames = [
+        "--chart-1",
+        "--chart-2",
+        "--chart-3",
+        "--chart-4",
+        "--chart-5",
+        "--chart-6",
+        "--chart-7",
+        "--chart-8",
+        "--chart-9",
+        "--chart-10",
+        "--chart-11",
+        "--chart-12",
+        "--chart-13",
+        "--chart-14",
+        "--chart-15",
+        "--chart-16",
       ];
-      setColors(next);
+      const brightFallback = [
+        "#4F46E5", // indigo-600
+        "#10B981", // emerald-500
+        "#F59E0B", // amber-500
+        "#EF4444", // red-500
+        "#3B82F6", // blue-500
+        "#8B5CF6", // violet-500
+        "#EC4899", // pink-500
+        "#22C55E", // green-500
+        "#F97316", // orange-500
+        "#06B6D4", // cyan-500
+        "#84CC16", // lime-500
+        "#EAB308", // yellow-500
+        "#DB2777", // rose-600
+        "#0EA5E9", // sky-500
+        "#A855F7", // purple-500
+        "#14B8A6", // teal-500
+      ];
+      const resolved = varNames.map((vn, i) => resolveColor(vn, brightFallback[i % brightFallback.length]));
+      setColors(resolved);
     };
 
     compute();
@@ -42,6 +70,24 @@ export function useChartPalette() {
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
     return () => obs.disconnect();
   }, []);
-  return colors.length ? colors : ["#3860FF", "#3860FF", "#38BAAC", "#BA38E6", "#FFAA20", "#F05546", "#777777"];
+  return colors.length
+    ? colors
+    : [
+        "#4F46E5",
+        "#10B981",
+        "#F59E0B",
+        "#EF4444",
+        "#3B82F6",
+        "#8B5CF6",
+        "#EC4899",
+        "#22C55E",
+        "#F97316",
+        "#06B6D4",
+        "#84CC16",
+        "#EAB308",
+        "#DB2777",
+        "#0EA5E9",
+        "#A855F7",
+        "#14B8A6",
+      ];
 }
-
