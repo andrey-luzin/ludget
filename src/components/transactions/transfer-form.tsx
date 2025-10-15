@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { DatePicker } from "@/components/date-picker";
 import { Label } from "@/components/ui/label";
+import { useI18n } from "@/contexts/i18n-context";
+
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
@@ -30,7 +32,8 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
   const [comment, setComment] = useState("");
   const [date, setDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
-  const submitLabel = editingTx ? "Сохранить" : "Добавить";
+  const { t } = useI18n();
+  const submitLabel = editingTx ? t("transfer.submit.save") : t("transfer.submit.add");
   const amountPreview = useMemo(() => getAmountPreview(amount), [amount]);
 
   // default accounts
@@ -79,12 +82,12 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
 
   async function submit() {
     if (!fromId || !toId || !currencyId || !amount.trim()) {
-      setError("Заполните обязательные поля.");
+      setError(t("transfer.errors.required"));
       return;
     }
     const evaluated = evaluateAmountExpression(amount);
     if (evaluated == null) {
-      setError("Введите корректное выражение суммы.");
+      setError(t("transfer.errors.amount_expr"));
       return;
     }
     const normalizedAmount = Number(roundMoneyAmount(evaluated).toFixed(2));
@@ -133,7 +136,7 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
       onDone?.();
     } catch (err) {
       console.error("Failed to save transfer transaction", err);
-      setError("Не удалось сохранить транзакцию. Попробуйте ещё раз.");
+      setError(t("transfer.errors.save_failed"));
     }
   }
 
@@ -149,10 +152,10 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
     <div className="grid gap-4" onKeyDownCapture={handleMetaEnterSubmit}>
       <div className="flex flex-col gap-3 md:flex-row md:items-end">
         <div className="grid gap-1">
-          <Label htmlFor={fromSelId}>Счет откуда</Label>
+          <Label htmlFor={fromSelId}>{t("transfer.from")}</Label>
           <Select value={fromId} onValueChange={setFromId}>
             <SelectTrigger id={fromSelId} className="font-semibold sm:w-56">
-              <SelectValue placeholder="Выберите" />
+              <SelectValue placeholder={t("common.choose")} />
             </SelectTrigger>
             <SelectContent>
               {visibleAccounts.map((a) => (
@@ -167,10 +170,10 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
           </Select>
         </div>
         <div className="grid gap-1">
-          <Label htmlFor={toSelId}>Счет куда</Label>
+          <Label htmlFor={toSelId}>{t("transfer.to")}</Label>
           <Select value={toId} onValueChange={setToId}>
             <SelectTrigger id={toSelId} className="font-semibold sm:w-56">
-              <SelectValue placeholder="Выберите" />
+              <SelectValue placeholder={t("common.choose")} />
             </SelectTrigger>
             <SelectContent>
               {visibleAccounts.map((a) => (
@@ -185,14 +188,14 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
           </Select>
         </div>
         <div className="grid gap-1 md:ml-auto md:w-auto">
-          <Label htmlFor={dateId}>Дата</Label>
+          <Label htmlFor={dateId}>{t("common.date")}</Label>
           <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
         </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="grid gap-1">
-          <Label htmlFor={amountId}>Сумма</Label>
+          <Label htmlFor={amountId}>{t("common.amount")}</Label>
           <div className="relative">
             <Input
               id={amountId}
@@ -210,7 +213,7 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
           </div>
         </div>
         <div className="grid gap-1">
-          <Label htmlFor={currencySelId}>Валюта</Label>
+          <Label htmlFor={currencySelId}>{t("common.currency")}</Label>
           <Select value={currencyId} onValueChange={setCurrencyId}>
             <SelectTrigger id={currencySelId} className="w-full sm:w-40">
               <SelectValue placeholder="Выберите" />
@@ -225,8 +228,8 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
           </Select>
         </div>
         <div className="grid min-w-0 flex-1 gap-1">
-          <label className="text-sm font-medium">Комментарий</label>
-          <Input placeholder="Опционально" value={comment} onChange={(e) => setComment(e.target.value)} />
+          <label className="text-sm font-medium">{t("common.comment")}</label>
+          <Input placeholder={t("common.optional")} value={comment} onChange={(e) => setComment(e.target.value)} />
         </div>
       </div>
 
@@ -234,7 +237,7 @@ export function TransferForm({ accounts, currencies, editingTx, onDone }: { acco
 
       <div className="flex justify-end gap-2 pt-1">
         {editingTx ? (
-          <Button variant="ghost" onClick={() => onDone?.()}>Отменить</Button>
+          <Button variant="ghost" onClick={() => onDone?.()}>{t("common.cancel")}</Button>
         ) : null}
         <Button onClick={submit}>{submitLabel}</Button>
       </div>

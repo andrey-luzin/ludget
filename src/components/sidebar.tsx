@@ -14,23 +14,24 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { MQBreakpoint, useMediaQuery } from "@/hooks/use-media-query";
+import { useI18n } from "@/contexts/i18n-context";
 
 const navItems = [
-  { href: "/", label: "Транзакции", emoji: "🧾" },
-  { href: "/statistics", label: "Статистика", emoji: "📈" },
-];
+  { href: "/", key: "nav.transactions", emoji: "🧾" },
+  { href: "/statistics", key: "nav.statistics", emoji: "📈" },
+] as const;
 
 const directoriesItems = [
-  { href: "/directories/accounts", label: "Счета", emoji: "🏦" },
-  { href: "/directories/currencies", label: "Валюты", emoji: "💱" },
-  { href: "/directories/categories", label: "Категории", emoji: "🏷️" },
-  { href: "/directories/income-sources", label: "Источники", emoji: "💼" },
-];
+  { href: "/directories/accounts", key: "nav.accounts", emoji: "🏦" },
+  { href: "/directories/currencies", key: "nav.currencies", emoji: "💱" },
+  { href: "/directories/categories", key: "nav.categories", emoji: "🏷️" },
+  { href: "/directories/income-sources", key: "nav.income_sources", emoji: "💼" },
+] as const;
 
 const settingsItems = [
-  { href: "/settings/sharing", label: "Совместное использование" },
-  { href: "/settings/preferences", label: "Персонализация" },
-];
+  { href: "/settings/sharing", key: "nav.settings_sharing" },
+  { href: "/settings/preferences", key: "nav.settings_preferences" },
+] as const;
 
 type SidebarProps = {
   mobileOpen?: boolean;
@@ -41,6 +42,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
   const pathname = usePathname();
   const router = useRouter();
   const { signOut, user } = useAuth();
+  const { t } = useI18n();
   const [directoriesOpen, setDirectoriesOpen] = useState(true);
   const isTablet = useMediaQuery(`(max-width: ${MQBreakpoint.Md - 1}px)`);
   const isMobile = useMediaQuery(`(max-width: ${MQBreakpoint.Sm - 1}px)`);
@@ -113,7 +115,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
               variant="ghost"
               size="icon"
               onClick={() => setMobileOpen(false)}
-              aria-label="Скрыть меню"
+              aria-label={t("nav.hide_menu")}
               className="-mr-1"
             >
               <X className="h-5 w-5" />
@@ -136,7 +138,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
                 onClick={handleNavigate}
               >
                 <span aria-hidden>{item.emoji}</span>
-                <span>{item.label}</span>
+                <span>{t(item.key)}</span>
               </Link>
             );
           })}
@@ -148,7 +150,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
             >
               <span className="flex items-center gap-2">
                 <span aria-hidden>📚</span>
-                <span>Справочники</span>
+                <span>{t("nav.directories")}</span>
               </span>
               <ChevronDown className={cn(
                 "h-4 w-4 transition-transform",
@@ -172,7 +174,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
                       onClick={handleNavigate}
                     >
                       <span aria-hidden>{item.emoji}</span>
-                      <span>{item.label}</span>
+                      <span>{t(item.key)}</span>
                     </Link>
                   );
                 })}
@@ -190,7 +192,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
               >
                 <div className="flex items-center gap-2 w-full">
                   <span aria-hidden>⚙️</span>
-                  <span>{user?.email ?? "Аккаунт"}</span>
+                  <span>{user?.email ?? t("nav.account")}</span>
                   <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-75" />
                 </div>
               </Button>
@@ -215,7 +217,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
                       }
                       onClick={handleNavigate}
                     >
-                      {item.label}
+                      {t(item.key as any)}
                     </Link>
                   </DropdownMenuItem>
                 );
@@ -223,7 +225,7 @@ export default function Sidebar({ mobileOpen, onMobileOpenChange }: SidebarProps
             </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="outline" className="w-full" onClick={handleLogout}>
-            Выйти
+            {t("nav.logout")}
           </Button>
         </div>
       </aside>

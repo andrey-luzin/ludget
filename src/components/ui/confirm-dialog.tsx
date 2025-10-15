@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { AlertModal } from "@/components/ui/alert-modal";
+import { useI18n } from "@/contexts/i18n-context";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -16,22 +17,26 @@ type ConfirmDialogProps = {
 
 export function ConfirmDialog({
   open,
-  title = "Подтвердите действие",
+  title,
   description,
-  confirmText = "Удалить",
-  cancelText = "Отмена",
+  confirmText,
+  cancelText,
   onConfirm,
   onOpenChange,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
+  const titleText = title ?? t("confirm.title");
+  const confirmBtnText = confirmText ?? t("confirm.confirm");
+  const cancelBtnText = cancelText ?? t("confirm.cancel");
   return (
     <AlertModal
       open={open}
       onOpenChange={onOpenChange}
-      title={title}
+      title={titleText}
       description={description}
       footer={
         <>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>{cancelText}</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{cancelBtnText}</Button>
           <Button
             variant="destructive"
             onClick={async () => {
@@ -39,7 +44,7 @@ export function ConfirmDialog({
               onOpenChange(false);
             }}
           >
-            {confirmText}
+            {confirmBtnText}
           </Button>
         </>
       }
@@ -49,9 +54,9 @@ export function ConfirmDialog({
 
 export function InfoDialog({
   open,
-  title = "Информация",
+  title,
   description,
-  okText = "Понятно",
+  okText,
   onOpenChange,
 }: {
   open: boolean;
@@ -60,13 +65,16 @@ export function InfoDialog({
   okText?: string;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t } = useI18n();
+  const titleText = title ?? t("info.title");
+  const ok = okText ?? t("info.ok");
   return (
     <AlertModal
       open={open}
       onOpenChange={onOpenChange}
-      title={title}
+      title={titleText}
       description={description}
-      footer={<Button variant="outline" onClick={() => onOpenChange(false)}>{okText}</Button>}
+      footer={<Button variant="outline" onClick={() => onOpenChange(false)}>{ok}</Button>}
     />
   );
 }

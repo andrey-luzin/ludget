@@ -5,8 +5,10 @@ import { Menu } from "lucide-react";
 import Sidebar from "@/components/sidebar";
 import { Button } from "@/components/ui/button";
 import { MQBreakpoint, useMediaQuery } from "@/hooks/use-media-query";
+import { useI18n } from "@/contexts/i18n-context";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const isMobile = useMediaQuery(`(max-width: ${MQBreakpoint.Md - 1}px)`);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -47,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               variant="ghost"
               size="icon"
               onClick={() => setMobileSidebarOpen(true)}
-              aria-label="Открыть меню"
+              aria-label={t("nav.open_menu")}
             >
               <Menu className="h-5 w-5" />
             </Button>

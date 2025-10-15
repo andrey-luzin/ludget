@@ -13,6 +13,7 @@ import { TransferForm } from "@/components/transactions/transfer-form";
 import { ExchangeForm } from "@/components/transactions/exchange-form";
 import { TransactionsList } from "@/components/transactions/transactions-list";
 import type { Account, Category, Currency, Source } from "@/types/entities";
+import { useI18n } from "@/contexts/i18n-context";
 
 const MAX_ORDER_VALUE = Number.MAX_SAFE_INTEGER;
 
@@ -35,6 +36,7 @@ function compareSources(a: Source, b: Source) {
 }
 
 export default function TransactionsPage() {
+  const { t } = useI18n();
   const { ownerUid } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
@@ -233,17 +235,17 @@ export default function TransactionsPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Транзакции</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("app.transactions.title")}</h1>
       <Tabs defaultValue="expense" className="mt-4">
         <TabsList>
-          <TabsTrigger value="expense">Расход</TabsTrigger>
-          <TabsTrigger value="income">Доход</TabsTrigger>
-          <TabsTrigger value="transfer">Перемещение</TabsTrigger>
-          <TabsTrigger value="exchange">Обмен валют</TabsTrigger>
+          <TabsTrigger value="expense">{t("app.tabs.expense")}</TabsTrigger>
+          <TabsTrigger value="income">{t("app.tabs.income")}</TabsTrigger>
+          <TabsTrigger value="transfer">{t("app.tabs.transfer")}</TabsTrigger>
+          <TabsTrigger value="exchange">{t("app.tabs.exchange")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="expense">
-          <h2 className="text-lg font-medium mb-3">Расход</h2>
+          <h2 className="text-lg font-medium mb-3">{t("app.tabs.expense")}</h2>
           <div ref={expenseFormRef}>
             <ExpenseForm accounts={accounts} currencies={currencies} categories={categories} editingTx={editingExpense} onDone={() => setEditingExpense(null)} />
           </div>
@@ -257,7 +259,7 @@ export default function TransactionsPage() {
           />
         </TabsContent>
         <TabsContent value="income">
-          <h2 className="text-lg font-medium mb-3">Доход</h2>
+          <h2 className="text-lg font-medium mb-3">{t("app.tabs.income")}</h2>
           <div ref={incomeFormRef}>
             <IncomeForm accounts={accounts} sources={sources} currencies={currencies} editingTx={editingIncome} onDone={() => setEditingIncome(null)} />
           </div>
@@ -271,7 +273,7 @@ export default function TransactionsPage() {
           />
         </TabsContent>
         <TabsContent value="transfer">
-          <h2 className="text-lg font-medium mb-3">Перемещение</h2>
+          <h2 className="text-lg font-medium mb-3">{t("app.tabs.transfer")}</h2>
           <div ref={transferFormRef}>
             <TransferForm
               accounts={accounts}
@@ -289,7 +291,7 @@ export default function TransactionsPage() {
           />
         </TabsContent>
         <TabsContent value="exchange">
-          <h2 className="text-lg font-medium mb-3">Обмен валют</h2>
+          <h2 className="text-lg font-medium mb-3">{t("app.tabs.exchange")}</h2>
           <div ref={exchangeFormRef}>
             <ExchangeForm accounts={accounts} currencies={currencies} editingTx={editingExchange} onDone={() => setEditingExchange(null)} />
           </div>

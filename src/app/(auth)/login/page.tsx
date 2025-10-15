@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
+import { useI18n } from "@/contexts/i18n-context";
 
 export default function LoginPage() {
   const { user, loading, signIn } = useAuth();
   const router = useRouter();
+  const { t } = useI18n();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +29,7 @@ export default function LoginPage() {
       await signIn(email, password);
       router.replace("/");
     } catch (err: any) {
-      setError(err?.message ?? "Login failed");
+      setError(err?.message ?? t("login.error_generic"));
     } finally {
       setPending(false);
     }
@@ -36,11 +38,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold tracking-tight">Вход</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("login.title")}</h1>
 
         <form onSubmit={handleSubmit} className="mt-6 grid gap-3">
           <div className="grid gap-1.5">
-            <label htmlFor="email" className="text-sm font-medium">Email</label>
+            <label htmlFor="email" className="text-sm font-medium">{t("login.email")}</label>
             <Input
               id="email"
               type="email"
@@ -51,7 +53,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="grid gap-1.5">
-            <label htmlFor="password" className="text-sm font-medium">Пароль</label>
+            <label htmlFor="password" className="text-sm font-medium">{t("login.password")}</label>
             <Input
               id="password"
               type="password"
@@ -65,7 +67,7 @@ export default function LoginPage() {
             <div className="text-sm text-red-600">{error}</div>
           ) : null}
           <Button type="submit" loading={pending}>
-            Войти
+            {t("login.submit")}
           </Button>
         </form>
       </div>

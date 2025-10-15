@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
 import { ThemeMode } from "@/types/preferences";
-import { useI18n } from "@/contexts/i18n-context";
+import { useI18n, type Language } from "@/contexts/i18n-context";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -15,7 +15,7 @@ import { useState } from "react";
 export default function PreferencesSettingsPage() {
   const { theme, useSystemTheme, setTheme, setUseSystemTheme } = useThemePreferences();
   const { lang, setLang, t } = useI18n();
-  const [draftLang, setDraftLang] = useState(lang);
+  const [draftLang, setDraftLang] = useState<Language>(lang);
   const [saving, setSaving] = useState(false);
 
   async function handleSaveLanguage() {
@@ -30,7 +30,7 @@ export default function PreferencesSettingsPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold tracking-tight">{t("settings_personalization")}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("settings.personalization")}</h1>
       <p className="text-muted-foreground mt-1">
         Настройки темы сохраняются локально на этом устройстве и не синхронизируются между браузерами.
       </p>
@@ -38,20 +38,20 @@ export default function PreferencesSettingsPage() {
       <div className="mt-6 space-y-6">
         <div className="rounded-lg border p-4">
           <div className="mb-2">
-            <Label htmlFor="language-select">{t("settings_language")}</Label>
+            <Label htmlFor="language-select">{t("settings.language")}</Label>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Select value={draftLang} onValueChange={(v) => setDraftLang(v as any)}>
+            <Select value={draftLang} onValueChange={(v) => setDraftLang(v as Language)}>
               <SelectTrigger id="language-select" className="w-56">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="en">{t("language_en")}</SelectItem>
-                <SelectItem value="ru">{t("language_ru")}</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+                <SelectItem value="ru">Русский</SelectItem>
               </SelectContent>
             </Select>
             <Button type="button" onClick={handleSaveLanguage} disabled={saving || draftLang === lang}>
-              {t("common_save")}
+              {t("common.save")}
             </Button>
           </div>
         </div>

@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/types/entities";
+import { useI18n } from "@/contexts/i18n-context";
 import { buildCategoryIndex, getDescendants, depthOf } from "@/lib/categories";
 
 export type CategoryMultiSelectProps = {
@@ -18,7 +19,8 @@ export type CategoryMultiSelectProps = {
   triggerClassName?: string;
 };
 
-export function CategoryMultiSelect({ value, onChange, categories, placeholder = "Категории", triggerClassName }: CategoryMultiSelectProps) {
+export function CategoryMultiSelect({ value, onChange, categories, placeholder, triggerClassName }: CategoryMultiSelectProps) {
+  const { t } = useI18n();
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
 
@@ -51,11 +53,12 @@ export function CategoryMultiSelect({ value, onChange, categories, placeholder =
       .map((c) => c.id);
   }, [query, ordered, byId, allIds]);
 
+  const effectivePlaceholder = placeholder ?? t("stats.categories.placeholder");
   const label = React.useMemo(() => {
-    if (value.length === 0) return placeholder;
-    if (value.length === 1) return byId.get(value[0])?.name ?? placeholder;
-    return `Выбрано: ${value.length}`;
-  }, [value, byId, placeholder]);
+    if (value.length === 0) return effectivePlaceholder;
+    if (value.length === 1) return byId.get(value[0])?.name ?? effectivePlaceholder;
+    return t("stats.selected_count").replace("{{count}}", String(value.length));
+  }, [value, byId, effectivePlaceholder, t]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -68,13 +71,13 @@ export function CategoryMultiSelect({ value, onChange, categories, placeholder =
       <PopoverContent align="start" className="p-0 w-96">
         <div className="border-b p-2 flex items-center gap-2">
           <Input
-            placeholder="Поиск..."
+            placeholder={t("stats.search")}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="h-8"
           />
-          <Button type="button" variant="ghost" size="sm" onClick={clearAll}>Сброс</Button>
-          <Button type="button" variant="ghost" size="sm" onClick={selectAll}>Все</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={clearAll}>{t("stats.clear")}</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={selectAll}>{t("stats.all")}</Button>
         </div>
         <div className="max-h-72 overflow-y-auto py-1 text-sm">
           {ordered
@@ -107,7 +110,7 @@ export function CategoryMultiSelect({ value, onChange, categories, placeholder =
               );
             })}
           {filteredIds.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">Ничего не найдено</div>
+            <div className="py-8 text-center text-muted-foreground">{t("stats.nothing_found")}</div>
           ) : null}
         </div>
       </PopoverContent>

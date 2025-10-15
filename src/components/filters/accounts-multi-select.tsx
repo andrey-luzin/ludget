@@ -5,13 +5,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Account } from "@/types/entities";
+import { useI18n } from "@/contexts/i18n-context";
 
 export function AccountsMultiSelect({
   accounts,
   value,
   onChange,
   triggerId,
-  placeholder = "Все счета",
+  placeholder,
 }: {
   accounts: Account[];
   value: string[];
@@ -19,6 +20,7 @@ export function AccountsMultiSelect({
   triggerId?: string;
   placeholder?: string;
 }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [temp, setTemp] = useState<string[]>(value || []);
 
@@ -26,11 +28,12 @@ export function AccountsMultiSelect({
     if (open) setTemp(value || []);
   }, [open]);
 
+  const effectivePlaceholder = placeholder ?? t("filters.accounts.placeholder");
   const label = useMemo(() => {
-    if (!value?.length) return placeholder;
-    if (value.length === 1) return accounts.find((a) => a.id === value[0])?.name ?? "1 счёт";
-    return `Счета: ${value.length}`;
-  }, [value, accounts, placeholder]);
+    if (!value?.length) return effectivePlaceholder;
+    if (value.length === 1) return accounts.find((a) => a.id === value[0])?.name ?? "1";
+    return `${t("nav.accounts")}: ${value.length}`;
+  }, [value, accounts, effectivePlaceholder, t]);
 
   function toggle(id: string, checked: boolean) {
     const set = new Set(temp);
@@ -59,9 +62,9 @@ export function AccountsMultiSelect({
       <PopoverContent align="start" className="p-3 w-64">
         <div className="grid gap-2">
           <div className="flex items-center justify-between gap-2">
-            <Button variant="ghost" size="sm" onClick={clear}>Сбросить</Button>
+            <Button variant="ghost" size="sm" onClick={clear}>{t("filters.accounts.reset")}</Button>
             <Button variant="secondary" size="sm" onClick={selectAllToggle}>
-              {temp.length === accounts.length && accounts.length > 0 ? "Сбросить все" : "Выбрать все"}
+              {temp.length === accounts.length && accounts.length > 0 ? t("filters.accounts.reset_all") : t("filters.accounts.select_all")}
             </Button>
           </div>
           <div className="max-h-56 overflow-auto rounded-md border p-2">
@@ -79,11 +82,10 @@ export function AccountsMultiSelect({
             })}
           </div>
           <div className="flex justify-end">
-            <Button size="sm" onClick={() => { onChange(temp); setOpen(false); }}>Применить</Button>
+            <Button size="sm" onClick={() => { onChange(temp); setOpen(false); }}>{t("filters.accounts.apply")}</Button>
           </div>
         </div>
       </PopoverContent>
     </Popover>
   );
 }
-

@@ -3,18 +3,15 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { usePreferences } from "@/hooks/use-preferences";
 import { useAuth } from "@/contexts/auth-context";
-import { en as enDict } from "@/i18n/en";
-import { ru as ruDict } from "@/i18n/ru";
+import enDict from "@/i18n/en.json";
+import ruDict from "@/i18n/ru.json";
 
-type Language = "en" | "ru";
+export type Language = "en" | "ru";
 
 type Messages = Record<string, string>;
 type Dictionaries = Record<Language, Messages>;
 
-const dictionaries: Dictionaries = {
-  en: enDict,
-  ru: ruDict,
-};
+const dictionaries: Dictionaries = { en: enDict as Record<string, string>, ru: ruDict as Record<string, string> };
 
 function systemLanguage(): Language {
   if (typeof navigator === "undefined") return "en";
@@ -26,7 +23,7 @@ function systemLanguage(): Language {
 type I18nContextValue = {
   lang: Language;
   setLang: (l: Language) => void;
-  t: (key: keyof typeof dictionaries["en"]) => string;
+  t: (key: string) => string;
 };
 
 const I18nContext = createContext<I18nContextValue | undefined>(undefined);
@@ -72,7 +69,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const t = useMemo(() => {
     const dict = dictionaries[lang];
-    return (key: keyof typeof dict) => dict[key] ?? String(key);
+    return (key: string) => dict[key] ?? String(key);
   }, [lang]);
 
   const value = useMemo<I18nContextValue>(() => ({ lang, setLang, t }), [lang]);
