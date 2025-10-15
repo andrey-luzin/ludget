@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { DatePicker } from "@/components/date-picker";
 import { Label } from "@/components/ui/label";
+import { useI18n } from "@/contexts/i18n-context";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
@@ -18,6 +19,7 @@ import type { Account, Currency } from "@/types/entities";
 
 export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { accounts: Account[]; currencies: Currency[]; editingTx?: any | null; onDone?: () => void }) {
   const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
+  const { t } = useI18n();
   const accSelId = useId();
   const dateId = useId();
   const fromCurSelId = useId();
@@ -34,10 +36,10 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
   const [date, setDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
   const currencyName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
-  const submitLabel = editingTx ? "Сохранить" : "Добавить";
+  const submitLabel = editingTx ? t("transfer.submit.save") : t("transfer.submit.add");
   const amountFromPreview = useMemo(() => getAmountPreview(amountFrom), [amountFrom]);
   const amountToPreview = useMemo(() => getAmountPreview(amountTo), [amountTo]);
-  const sameCurrencyError = "Нельзя обменивать валюту саму на себя.";
+  const sameCurrencyError = t("exchange.same_currency_error");
 
   useEffect(() => {
     if (!currencies.length) {
@@ -99,7 +101,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
 
   async function submit() {
     if (!accountId || !fromCurrencyId || !toCurrencyId || !amountFrom.trim() || !amountTo.trim()) {
-      setError("Заполните обязательные поля.");
+      setError(t("transfer.errors.required"));
       return;
     }
     if (fromCurrencyId === toCurrencyId) {
@@ -109,7 +111,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
     const evaluatedFrom = evaluateAmountExpression(amountFrom);
     const evaluatedTo = evaluateAmountExpression(amountTo);
     if (evaluatedFrom == null || evaluatedTo == null) {
-      setError("Введите корректное выражение суммы.");
+      setError(t("transfer.errors.amount_expr"));
       return;
     }
     const normalizedFrom = Number(roundMoneyAmount(evaluatedFrom).toFixed(2));
@@ -161,7 +163,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
       onDone?.();
     } catch (err) {
       console.error("Failed to save exchange transaction", err);
-      setError("Не удалось сохранить транзакцию. Попробуйте ещё раз.");
+      setError(t("transfer.errors.save_failed"));
     }
   }
 
@@ -177,10 +179,10 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
     <div className="grid gap-4" onKeyDownCapture={handleMetaEnterSubmit}>
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="grid gap-1">
-          <Label htmlFor={accSelId}>Счет</Label>
+          <Label htmlFor={accSelId}>{t("nav.accounts")}</Label>
           <Select value={accountId} onValueChange={setAccountId}>
             <SelectTrigger id={accSelId} className="font-semibold sm:w-56">
-              <SelectValue placeholder="Выберите" />
+              <SelectValue placeholder={t("common.choose")} />
             </SelectTrigger>
             <SelectContent>
               {visibleAccounts.map((a) => (
@@ -195,20 +197,20 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
           </Select>
         </div>
         <div className="grid gap-1 md:w-auto">
-          <Label htmlFor={dateId}>Дата</Label>
+          <Label htmlFor={dateId}>{t("common.date")}</Label>
           <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
         </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="grid gap-1">
-          <Label htmlFor={fromCurSelId}>Продали (валюта)</Label>
+          <Label htmlFor={fromCurSelId}>{t("exchange.sold_currency")}</Label>
           <Select value={fromCurrencyId} onValueChange={(value) => {
             setFromCurrencyId(value);
             setError((prev) => (prev === sameCurrencyError && value !== toCurrencyId ? null : prev));
           }}>
             <SelectTrigger id={fromCurSelId} className="w-full sm:w-44">
-              <SelectValue placeholder="Выберите" />
+              <SelectValue placeholder={t("common.choose")} />
             </SelectTrigger>
             <SelectContent>
               {currencies.map((c) => (
@@ -218,7 +220,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
           </Select>
         </div>
         <div className="grid gap-1">
-          <Label htmlFor={fromAmtId}>Сколько продали</Label>
+          <Label htmlFor={fromAmtId}>{t("exchange.sold_amount")}</Label>
           <div className="relative">
             <Input
               id={fromAmtId}
@@ -239,13 +241,13 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="grid gap-1">
-          <Label htmlFor={toCurSelId}>Купили (валюта)</Label>
+          <Label htmlFor={toCurSelId}>{t("exchange.bought_currency")}</Label>
           <Select value={toCurrencyId} onValueChange={(value) => {
             setToCurrencyId(value);
             setError((prev) => (prev === sameCurrencyError && value !== fromCurrencyId ? null : prev));
           }}>
             <SelectTrigger id={toCurSelId} className="w-full sm:w-44">
-              <SelectValue placeholder="Выберите" />
+              <SelectValue placeholder={t("common.choose")} />
             </SelectTrigger>
             <SelectContent>
               {currencies.map((c) => (
@@ -255,7 +257,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
           </Select>
         </div>
         <div className="grid gap-1">
-          <Label htmlFor={toAmtId}>Сколько купили</Label>
+          <Label htmlFor={toAmtId}>{t("exchange.bought_amount")}</Label>
           <div className="relative">
             <Input
               id={toAmtId}
@@ -276,8 +278,8 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid min-w-0 flex-1 gap-1">
-          <Label htmlFor={commentId}>Комментарий</Label>
-          <Input id={commentId} placeholder="Опционально" value={comment} onChange={(e) => setComment(e.target.value)} />
+          <Label htmlFor={commentId}>{t("common.comment")}</Label>
+          <Input id={commentId} placeholder={t("common.optional")} value={comment} onChange={(e) => setComment(e.target.value)} />
         </div>
       </div>
 
@@ -285,7 +287,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
 
       <div className="flex justify-end gap-2 pt-1">
         {editingTx ? (
-          <Button variant="ghost" onClick={() => onDone?.()}>Отменить</Button>
+          <Button variant="ghost" onClick={() => onDone?.()}>{t("common.cancel")}</Button>
         ) : null}
         <Button onClick={submit}>{submitLabel}</Button>
       </div>

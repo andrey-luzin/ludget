@@ -18,6 +18,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import type { Account, Category, Currency, Source } from "@/types/entities";
 import { AccountsMultiSelect } from "@/components/filters/accounts-multi-select";
+import { useI18n } from "@/contexts/i18n-context";
 
 type TxType = "expense" | "income" | "transfer" | "exchange";
 
@@ -41,6 +42,7 @@ export function TransactionsList({
   editingId?: string | null;
 }) {
   const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
+  const { t } = useI18n();
   const [items, setItems] = useState<Tx[]>([]);
   const [accountFilter, setAccountFilter] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
@@ -186,7 +188,7 @@ export function TransactionsList({
     <div className="mt-6 rounded-xl border bg-muted/30 p-4 md:p-5">
       <div className="mb-5 md:mb-6 flex flex-wrap items-end gap-2">
         <div className="grid gap-1">
-          <Label htmlFor={accFilterId}>Фильтр по счету</Label>
+          <Label htmlFor={accFilterId}>{t("transactions.filter.account")}</Label>
           <AccountsMultiSelect
             accounts={accountOptions}
             value={accountFilter}
@@ -196,7 +198,7 @@ export function TransactionsList({
         </div>
 
         <div className="grid gap-1">
-          <Label htmlFor={dateFilterId}>Период</Label>
+          <Label htmlFor={dateFilterId}>{t("transactions.filter.period")}</Label>
           <DateRangePicker value={dateRange} onChange={setDateRange} triggerId={dateFilterId} />
         </div>
 
@@ -208,7 +210,7 @@ export function TransactionsList({
           disabled={!hasFilters}
           onClick={resetFilters}
         >
-          Сбросить фильтры
+          {t("filters.reset_filters")}
         </Button>
       </div>
 
@@ -345,19 +347,19 @@ export function TransactionsList({
                       variant="ghost"
                       onClick={() => onEdit?.(it)}
                       disabled={editingId === it.id}
-                      title="Редактировать"
+                      title={t("common.edit")}
                     >
                       <PenLine className="h-4 w-4" />
-                      <span className="max-xl:hidden">Редактировать</span>
+                      <span className="max-xl:hidden">{t("common.edit")}</span>
                     </Button>
                     <Button
                       variant="destructive"
                       onClick={() => setConfirmTx(it)}
                       disabled={editingId === it.id}
-                      title="Удалить"
+                      title={t("common.delete")}
                     >
                       <Trash2 className="h-4 w-4" />
-                      <span className="max-xl:hidden">Удалить</span>
+                      <span className="max-xl:hidden">{t("common.delete")}</span>
                     </Button>
                   </div>
                 </div>
@@ -395,7 +397,7 @@ export function TransactionsList({
                 setPendingDelete(false);
               }}
             >
-              Удалить
+              {t("common.delete")}
             </Button>
           </>
         }
@@ -417,6 +419,7 @@ function DateRangePicker({
 }) {
   const [open, setOpen] = useState(false);
   const [temp, setTemp] = useState<{ from?: Date; to?: Date }>(value || {});
+  const { t } = useI18n();
 
   // Initialize temp when opening
   useEffect(() => {
@@ -432,8 +435,8 @@ function DateRangePicker({
     }
     if (from && !to) return `${format(from, "dd.MM.yyyy")} — …`;
     if (!from && to) return `… — ${format(to, "dd.MM.yyyy")}`;
-    return "Все даты";
-  }, [value]);
+    return t("filters.dates.all");
+  }, [value, t]);
 
   function setPreset(preset: "day" | "weekSliding" | "monthSliding" | "yearSliding" | "sinceMonthStart") {
     const now = new Date();
@@ -474,17 +477,17 @@ function DateRangePicker({
             locale={ru}
           />
           <div className="w-48 md:w-56 grid gap-2">
-            <div className="text-sm font-medium">Быстрый выбор</div>
+            <div className="text-sm font-medium">{t("filters.dates.quick")}</div>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="secondary" onClick={() => setPreset("day")}>За день</Button>
-              <Button variant="secondary" onClick={() => setPreset("weekSliding")}>За неделю</Button>
-              <Button variant="secondary" onClick={() => setPreset("monthSliding")}>За месяц</Button>
-              <Button variant="secondary" onClick={() => setPreset("yearSliding")}>За год</Button>
-              <Button variant="secondary" onClick={() => setPreset("sinceMonthStart")} className="col-span-2">С начала месяца</Button>
+              <Button variant="secondary" onClick={() => setPreset("day")}>{t("filters.dates.day")}</Button>
+              <Button variant="secondary" onClick={() => setPreset("weekSliding")}>{t("filters.dates.week")}</Button>
+              <Button variant="secondary" onClick={() => setPreset("monthSliding")}>{t("filters.dates.month")}</Button>
+              <Button variant="secondary" onClick={() => setPreset("yearSliding")}>{t("filters.dates.year")}</Button>
+              <Button variant="secondary" onClick={() => setPreset("sinceMonthStart")} className="col-span-2">{t("filters.dates.since_month_start")}</Button>
             </div>
             <div className="flex items-center justify-between gap-2 pt-1">
-              <Button variant="ghost" onClick={clear}>Сбросить</Button>
-              <Button onClick={() => { onChange(temp || {}); setOpen(false); }}>Применить</Button>
+              <Button variant="ghost" onClick={clear}>{t("filters.accounts.reset")}</Button>
+              <Button onClick={() => { onChange(temp || {}); setOpen(false); }}>{t("filters.apply")}</Button>
             </div>
           </div>
         </div>

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert } from "@/components/ui/alert";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
+import { useI18n } from "@/contexts/i18n-context";
 import { Collections } from "@/types/collections";
 import {
   addDoc,
@@ -42,6 +43,7 @@ function compareCategories(a: Category, b: Category) {
 }
 
 export default function CategoriesPage() {
+  const { t } = useI18n();
   const ROOT = "__root__";
   const { ownerUid } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -104,7 +106,7 @@ export default function CategoriesPage() {
 
   async function addCategory() {
     if (!name.trim()) {
-      setError("Введите название категории.");
+      setError(t("categories.errors.name_required"));
       return;
     }
     setPending(true);
@@ -232,22 +234,22 @@ export default function CategoriesPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Категории</h1>
-      <p className="text-muted-foreground mt-1">Добавьте категории и подкатегории.</p>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("nav.categories")}</h1>
+      <p className="text-muted-foreground mt-1">{t("categories.subtitle")}</p>
 
       <div className="mt-6 grid gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-end sm:gap-3">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Название</label>
-          <Input placeholder="Название категории" value={name} onChange={handleNameChange} />
+          <label className="text-sm font-medium">{t("common.name")}</label>
+          <Input placeholder={t("categories.name_placeholder")} value={name} onChange={handleNameChange} />
         </div>
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Вложенность</label>
+          <label className="text-sm font-medium">{t("common.parent")}</label>
           <Select value={parentId} onValueChange={handleParentChange}>
             <SelectTrigger className="w-56">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ROOT}>Без родителя</SelectItem>
+              <SelectItem value={ROOT}>{t("common.without_parent")}</SelectItem>
               {orderedRoots.map((r) => (
                 <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
               ))}
@@ -255,7 +257,7 @@ export default function CategoriesPage() {
           </Select>
         </div>
         <div>
-          <Button onClick={addCategory} loading={pending}>Добавить</Button>
+          <Button onClick={addCategory} loading={pending}>{t("common.add")}</Button>
         </div>
       </div>
       {error ? <Alert className="mt-2">{error}</Alert> : null}
@@ -283,16 +285,15 @@ export default function CategoriesPage() {
 
       <ConfirmDialog
         open={Boolean(confirmDel)}
-        title="Удалить категорию?"
-        description={confirmDel ? `Категория "${confirmDel.name}" будет удалена.` : undefined}
+        title={t("categories.confirm.delete_title")}
+        description={confirmDel ? t("categories.confirm.delete_desc").replace("{{name}}", confirmDel.name) : undefined}
         onConfirm={() => confirmDel ? doDelete(confirmDel.id) : undefined}
         onOpenChange={(o) => !o && setConfirmDel(null)}
       />
       <InfoDialog
         open={Boolean(blocked)}
-        title="Нельзя удалить категорию"
-        description={blocked ? `Категория "${blocked.name}" имеет ${blocked.count} подкатегори(ю/и).
-Сначала удалите подкатегории.` : undefined}
+        title={t("categories.blocked.title")}
+        description={blocked ? t("categories.blocked.desc").replace("{{name}}", blocked.name).replace("{{count}}", String(blocked.count)) : undefined}
         onOpenChange={(o) => !o && setBlocked(null)}
       />
     </div>
@@ -322,6 +323,7 @@ function SortableRootCategory({
   onEditNameChange,
   onCancelEdit,
 }: SortableRootCategoryProps) {
+  const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: category.id,
   });
@@ -340,7 +342,7 @@ function SortableRootCategory({
       variant="ghost"
       size="icon"
       className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing -ml-1.5"
-      aria-label="Изменить порядок категории"
+      aria-label={t("categories.aria.reorder")}
       {...attributes}
       {...listeners}
     >
@@ -361,13 +363,13 @@ function SortableRootCategory({
         {dragHandle && dragHandle}
         {isRootEditing ? (
           <form onSubmit={onEditSubmit} className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-            <Input value={editingName} onChange={onEditNameChange} autoFocus placeholder="Название категории" />
+            <Input value={editingName} onChange={onEditNameChange} autoFocus placeholder={t("categories.name_placeholder")} />
             <div className="flex gap-2">
               <Button type="submit" size="sm" loading={editPending} disabled={!editingName.trim()}>
-                Сохранить
+                {t("common.save")}
               </Button>
               <Button type="button" size="sm" variant="ghost" onClick={onCancelEdit} disabled={editPending}>
-                Отмена
+                {t("common.cancel")}
               </Button>
             </div>
           </form>
@@ -379,7 +381,7 @@ function SortableRootCategory({
                 type="button"
                 size="icon"
                 variant="ghost"
-                aria-label="Редактировать"
+                aria-label={t("common.edit")}
                 onClick={() => onStartEdit(category)}
               >
                 <PenLine className="h-4 w-4" />
@@ -388,7 +390,7 @@ function SortableRootCategory({
                 type="button"
                 size="icon"
                 variant="ghost"
-                aria-label="Удалить"
+                aria-label={t("common.delete")}
                 onClick={() => onAskDelete(category)}
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -413,14 +415,14 @@ function SortableRootCategory({
                       value={childEditingName}
                       onChange={onEditNameChange}
                       autoFocus
-                      placeholder="Название категории"
+                      placeholder={t("categories.name_placeholder")}
                     />
                     <div className="flex gap-2">
                       <Button type="submit" size="sm" loading={editPending} disabled={!childEditingName.trim()}>
-                        Сохранить
+                        {t("common.save")}
                       </Button>
                       <Button type="button" size="sm" variant="ghost" onClick={onCancelEdit} disabled={editPending}>
-                        Отмена
+                        {t("common.cancel")}
                       </Button>
                     </div>
                   </form>
@@ -432,7 +434,7 @@ function SortableRootCategory({
                         type="button"
                         size="icon"
                         variant="ghost"
-                        aria-label="Редактировать"
+                        aria-label={t("common.edit")}
                         onClick={() => onStartEdit(child)}
                       >
                         <PenLine className="h-4 w-4" />
@@ -441,7 +443,7 @@ function SortableRootCategory({
                         type="button"
                         size="icon"
                         variant="ghost"
-                        aria-label="Удалить"
+                        aria-label={t("common.delete")}
                         onClick={() => onAskDelete(child)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />

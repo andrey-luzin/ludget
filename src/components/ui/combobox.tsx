@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/contexts/i18n-context";
 
 export type ComboboxOption = {
   value: string;
@@ -33,13 +34,14 @@ export function Combobox({
   value,
   onChange,
   options,
-  placeholder = "Выберите...",
-  searchPlaceholder = "Поиск...",
-  emptyMessage = "Ничего не найдено",
+  placeholder,
+  searchPlaceholder,
+  emptyMessage,
   disabled = false,
   triggerClassName,
   contentClassName,
 }: ComboboxProps) {
+  const { t } = useI18n();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<Array<HTMLButtonElement | null>>([]);
@@ -155,6 +157,9 @@ export function Combobox({
   };
 
   const contentId = id ? `${id}-content` : undefined;
+  const effectivePlaceholder = placeholder ?? t("common.choose");
+  const effectiveSearch = searchPlaceholder ?? t("stats.search");
+  const effectiveEmpty = emptyMessage ?? t("stats.nothing_found");
 
   return (
     <Popover open={open} onOpenChange={(next) => setOpen(!disabled && next)}>
@@ -174,7 +179,7 @@ export function Combobox({
           {selectedOption ? (
             <span className="flex-1 truncate text-left">{selectedOption.label}</span>
           ) : (
-            <span className="flex-1 truncate text-left text-muted-foreground">{placeholder}</span>
+            <span className="flex-1 truncate text-left text-muted-foreground">{effectivePlaceholder}</span>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -189,7 +194,7 @@ export function Combobox({
         <div className="border-b p-2">
           <Input
             ref={inputRef}
-            placeholder={searchPlaceholder}
+            placeholder={effectiveSearch}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
@@ -201,7 +206,7 @@ export function Combobox({
         </div>
         <div className="max-h-64 overflow-y-auto py-1">
           {filteredOptions.length === 0 ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">{emptyMessage}</div>
+            <div className="py-6 text-center text-sm text-muted-foreground">{effectiveEmpty}</div>
           ) : (
             (() => {
               listRef.current = new Array(filteredOptions.length).fill(null);

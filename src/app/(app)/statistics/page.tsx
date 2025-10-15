@@ -19,10 +19,12 @@ import { CategoryListWithPopover } from "@/components/statistics/category-list";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { roundMoneyAmount } from "@/lib/money";
 import { AccountsMultiSelect } from "@/components/filters/accounts-multi-select";
+import { useI18n } from "@/contexts/i18n-context";
 
 type Tx = { id: string; amount: number; date: any; categoryId?: string | null };
 
 export default function StatisticsPage() {
+  const { t } = useI18n();
   const [dateRange, setDateRange] = useState<DateRange>(() => {
     const now = new Date();
     return { from: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29), to: now };
@@ -188,53 +190,53 @@ export default function StatisticsPage() {
         byId.set(id, (byId.get(id) || 0) + rounded);
       }
     }
-    const data = Array.from(byId.entries()).map(([id, value]) => ({ id, name: catIndex.byId.get(id)?.name ?? "Без категории", value }));
+    const data = Array.from(byId.entries()).map(([id, value]) => ({ id, name: catIndex.byId.get(id)?.name ?? t("statistics.uncategorized"), value }));
     data.sort((a, b) => b.value - a.value);
     return data;
-  }, [filtered, catIndex, rates, codeByCurrencyId, targetCode]);
+  }, [filtered, catIndex, rates, codeByCurrencyId, targetCode, t]);
 
   const total = grouped.reduce((s, x) => s + x.value, 0);
   const palette = useChartPalette();
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Статистика</h1>
+      <h1 className="text-2xl font-semibold">{t("nav.statistics")}</h1>
       {!isPremium ? (
         <div className="rounded-md border border-yellow-300/50 bg-yellow-50 p-3 text-sm flex items-start justify-between gap-3">
           <div>
-            <div className="font-medium">Ограничение тарифного плана</div>
-            <div className="text-muted-foreground">Курсы валют доступны только для Premium-пользователей. Данные отображаются без конвертации.</div>
+            <div className="font-medium">{t("statistics.premium.limit_title")}</div>
+            <div className="text-muted-foreground">{t("statistics.premium.limit_desc")}</div>
           </div>
         </div>
       ) : null}
       {ratesError && isPremium ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm flex items-start justify-between gap-3">
           <div>
-            <div className="font-medium">Проблема с курсами валют</div>
+            <div className="font-medium">{t("statistics.rates.error_title")}</div>
             <div className="text-muted-foreground">
               {ratesError}
-              {ratesUpdatedAt ? ` (обновлено: ${new Date(ratesUpdatedAt).toLocaleDateString()})` : null}
+              {ratesUpdatedAt ? ` (${t("statistics.rates.updated_at_prefix")} ${new Date(ratesUpdatedAt).toLocaleDateString()})` : null}
             </div>
           </div>
-          <button className="text-xs text-muted-foreground cursor-pointer" onClick={() => setRatesError(null)}>Скрыть</button>
+          <button className="text-xs text-muted-foreground cursor-pointer" onClick={() => setRatesError(null)}>{t("common.hide")}</button>
         </div>
       ) : null}
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-2">
-          <div className="text-sm text-muted-foreground">Период</div>
+          <div className="text-sm text-muted-foreground">{t("transactions.filter.period")}</div>
           <DateRangePicker value={dateRange} onChange={setDateRange} />
         </div>
         <div className="space-y-2 min-w-64">
-          <div className="text-sm text-muted-foreground">Категории</div>
+          <div className="text-sm text-muted-foreground">{t("stats.categories.placeholder")}</div>
           <CategoryMultiSelect value={selectedCategories} onChange={setSelectedCategories} categories={categories} />
         </div>
         <div className="space-y-2 min-w-64">
-          <div className="text-sm text-muted-foreground">Счета</div>
+          <div className="text-sm text-muted-foreground">{t("nav.accounts")}</div>
           <AccountsMultiSelect accounts={accounts} value={accountFilter} onChange={setAccountFilter} />
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" onClick={() => resetFilters(setDateRange, setSelectedCategories)}>
-            Сбросить
+            {t("filters.reset_filters")}
           </Button>
         </div>
       </div>
@@ -242,7 +244,7 @@ export default function StatisticsPage() {
       <div className="rounded-lg border bg-card text-card-foreground">
         <div className="p-4 flex items-center justify-between">
           <div>
-            <div className="text-sm text-muted-foreground">Итого расходов</div>
+            <div className="text-sm text-muted-foreground">{t("statistics.total_expenses")}</div>
             <div className="text-2xl font-semibold">{`${roundMoneyAmount(total)} ${targetCode}`}</div>
           </div>
         </div>
@@ -250,23 +252,23 @@ export default function StatisticsPage() {
           <Tabs value={tab} onValueChange={setTab} className="w-full">
             <div className="flex items-center justify-between px-2">
               <TabsList>
-                <TabsTrigger value="categories">Категории</TabsTrigger>
+                <TabsTrigger value="categories">{t("nav.categories")}</TabsTrigger>
               </TabsList>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Валюта</span>
+                <span className="text-sm text-muted-foreground">{t("common.currency")}</span>
                 <Select value={targetCurrencyId} onValueChange={setTargetCurrencyId}>
                   <SelectTrigger className="w-36">
-                    <SelectValue placeholder="Валюта" />
+                    <SelectValue placeholder={t("common.currency")} />
                   </SelectTrigger>
                   <SelectContent>
                     {currencies.map((c) => (
                       <SelectItem key={c.id} value={c.id} disabled={!c.code}>
-                        {c.name} {c.code ? `(${c.code})` : "(без кода)"}
+                        {c.name} {c.code ? `(${c.code})` : t("currencies.no_code")}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="sm" onClick={() => refreshRates(true)} loading={ratesLoading} disabled={ratesLoading || !isPremium} title={!isPremium ? "Доступно только для Premium" : undefined}>Обновить курсы сейчас</Button>
+                <Button variant="outline" size="sm" onClick={() => refreshRates(true)} loading={ratesLoading} disabled={ratesLoading || !isPremium} title={!isPremium ? t("statistics.premium_only") : undefined}>{t("statistics.refresh_rates_now")}</Button>
               </div>
             </div>
             <TabsContent value="categories" className="mt-2 p-2">

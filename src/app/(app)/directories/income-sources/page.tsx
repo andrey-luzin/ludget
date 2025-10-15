@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert } from "@/components/ui/alert";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
+import { useI18n } from "@/contexts/i18n-context";
 import { Collections } from "@/types/collections";
 import {
   addDoc,
@@ -42,6 +43,7 @@ function compareSources(a: Source, b: Source) {
 }
 
 export default function IncomeSourcesPage() {
+  const { t } = useI18n();
   const ROOT = "__root__";
   const { ownerUid } = useAuth();
   const [items, setItems] = useState<Source[]>([]);
@@ -108,7 +110,7 @@ export default function IncomeSourcesPage() {
 
   async function addItem() {
     if (!name.trim()) {
-      setError("Введите название источника дохода.");
+      setError(t("income_sources.errors.name_required"));
       return;
     }
     setPending(true);
@@ -235,22 +237,22 @@ export default function IncomeSourcesPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Источники доходов</h1>
-      <p className="text-muted-foreground mt-1">Добавьте источники и подкатегории.</p>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("income_sources.title")}</h1>
+      <p className="text-muted-foreground mt-1">{t("income_sources.subtitle")}</p>
 
       <div className="mt-6 grid gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-end sm:gap-3">
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Название</label>
-          <Input placeholder="Название источника" value={name} onChange={handleNameChange} />
+          <label className="text-sm font-medium">{t("common.name")}</label>
+          <Input placeholder={t("income_sources.placeholder")} value={name} onChange={handleNameChange} />
         </div>
         <div className="grid gap-1">
-          <label className="text-sm font-medium">Вложенность</label>
+          <label className="text-sm font-medium">{t("common.parent")}</label>
           <Select value={parentId} onValueChange={handleParentChange}>
             <SelectTrigger className="w-56">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ROOT}>Без родителя</SelectItem>
+              <SelectItem value={ROOT}>{t("common.without_parent")}</SelectItem>
               {orderedRoots.map((r) => (
                 <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
               ))}
@@ -258,7 +260,7 @@ export default function IncomeSourcesPage() {
           </Select>
         </div>
         <div>
-          <Button onClick={addItem} loading={pending}>Добавить</Button>
+          <Button onClick={addItem} loading={pending}>{t("common.add")}</Button>
         </div>
       </div>
       {error ? <Alert className="mt-2">{error}</Alert> : null}
@@ -286,16 +288,15 @@ export default function IncomeSourcesPage() {
 
       <ConfirmDialog
         open={Boolean(confirmDel)}
-        title="Удалить источник?"
-        description={confirmDel ? `Источник "${confirmDel.name}" будет удален.` : undefined}
+        title={t("income_sources.confirm.delete_title")}
+        description={confirmDel ? t("income_sources.confirm.delete_desc").replace("{{name}}", confirmDel.name) : undefined}
         onConfirm={() => (confirmDel ? doDelete(confirmDel.id) : undefined)}
         onOpenChange={(open) => !open && setConfirmDel(null)}
       />
       <InfoDialog
         open={Boolean(blocked)}
-        title="Нельзя удалить источник"
-        description={blocked ? `Источник "${blocked.name}" имеет ${blocked.count} подкатегори(ю/и).
-Сначала удалите подкатегории.` : undefined}
+        title={t("income_sources.blocked.title")}
+        description={blocked ? t("income_sources.blocked.desc").replace("{{name}}", blocked.name).replace("{{count}}", String(blocked.count)) : undefined}
         onOpenChange={(o) => !o && setBlocked(null)}
       />
     </div>
@@ -325,6 +326,7 @@ function SortableRootSource({
   onEditNameChange,
   onCancelEdit,
 }: SortableRootSourceProps) {
+  const { t } = useI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: source.id,
   });
@@ -343,7 +345,7 @@ function SortableRootSource({
       variant="ghost"
       size="icon"
       className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing -ml-1.5"
-      aria-label="Изменить порядок источника"
+      aria-label={t("income_sources.aria.reorder")}
       {...attributes}
       {...listeners}
     >

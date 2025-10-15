@@ -22,7 +22,7 @@ export default function PreferencesSettingsPage() {
     try {
       setSaving(true);
       // Persist via i18n setter (updates Firebase and localStorage)
-      setLang(draftLang as any);
+      setLang(draftLang);
     } finally {
       setSaving(false);
     }
@@ -31,9 +31,7 @@ export default function PreferencesSettingsPage() {
   return (
     <div className="max-w-2xl">
       <h1 className="text-2xl font-semibold tracking-tight">{t("settings.personalization")}</h1>
-      <p className="text-muted-foreground mt-1">
-        Настройки темы сохраняются локально на этом устройстве и не синхронизируются между браузерами.
-      </p>
+      <p className="text-muted-foreground mt-1">{t("settings.theme.local_note")}</p>
 
       <div className="mt-6 space-y-6">
         <div className="rounded-lg border p-4">
@@ -64,10 +62,8 @@ export default function PreferencesSettingsPage() {
               onCheckedChange={(checked) => setUseSystemTheme(Boolean(checked))}
             />
             <div className="space-y-1 inline-flex flex-col">
-              <Label htmlFor="system-theme">Использовать системную тему</Label>
-              <p className="text-sm text-muted-foreground">
-                Если включено, тема будет автоматически синхронизироваться с настройками операционной системы.
-              </p>
+              <Label htmlFor="system-theme">{t("settings.theme.use_system")}</Label>
+              <p className="text-sm text-muted-foreground">{t("settings.theme.use_system_hint")}</p>
             </div>
           </div>
 
@@ -83,7 +79,7 @@ export default function PreferencesSettingsPage() {
               <Moon className="h-5 w-5" />
             </div>
             <Label htmlFor="theme-switcher" className="ml-3 text-sm text-muted-foreground">
-              {theme === ThemeMode.Dark ? "Темная тема" : "Светлая тема"}
+              {theme === ThemeMode.Dark ? t("settings.theme.dark") : t("settings.theme.light")}
             </Label>
           </div>
         </div>

@@ -13,6 +13,7 @@ import { Alert } from "@/components/ui/alert";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
 import { db } from "@/lib/firebase";
+import { useI18n } from "@/contexts/i18n-context";
 import { useAuth } from "@/contexts/auth-context";
 import { deleteAccountIcon, uploadAccountIcon } from "@/lib/account-icon-storage";
 import {
@@ -33,6 +34,7 @@ import { Collections, SubCollections } from "@/types/collections";
 import type { Account, Balance, Currency } from "@/types/entities";
 
 export default function AccountsPage() {
+  const { t } = useI18n();
   const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [newName, setNewName] = useState("");
@@ -137,7 +139,7 @@ export default function AccountsPage() {
 
   async function addAccount() {
     if (!newName.trim()) {
-      setAddAccountError("Пожалуйста, введите название счета.");
+      setAddAccountError(t("accounts.errors.name_required"));
       return;
     }
     setPendingAdd(true);
@@ -171,15 +173,15 @@ export default function AccountsPage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Счета</h1>
-      <p className="text-muted-foreground mt-1">Управляйте счетами и их валютами.</p>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("nav.accounts")}</h1>
+      <p className="text-muted-foreground mt-1">{t("accounts.subtitle")}</p>
 
   <div className="mt-6 flex items-end gap-2">
     <div className="grid gap-1 grow-1">
-      <Label htmlFor={addAccountNameId}>Добавить счет</Label>
+      <Label htmlFor={addAccountNameId}>{t("accounts.add")}</Label>
       <Input
         id={addAccountNameId}
-        placeholder="Название счета"
+        placeholder={t("accounts.name_placeholder")}
         value={newName}
         onChange={(e) => {
           setNewName(e.target.value);
@@ -189,7 +191,7 @@ export default function AccountsPage() {
         }}
       />
     </div>
-    <Button onClick={addAccount} loading={pendingAdd}>Добавить</Button>
+    <Button onClick={addAccount} loading={pendingAdd}>{t("common.add")}</Button>
   </div>
       {addAccountError ? <Alert className="mt-2">{addAccountError}</Alert> : null}
 
@@ -214,8 +216,8 @@ export default function AccountsPage() {
 
       <ConfirmDialog
         open={Boolean(confirmAccount)}
-        title="Удалить счет?"
-        description={confirmAccount ? `Счет "${confirmAccount.name}" будет удален вместе с валютами.` : undefined}
+        title={t("accounts.confirm.delete_title")}
+        description={confirmAccount ? t("accounts.confirm.delete_desc").replace("{{name}}", confirmAccount.name) : undefined}
         onConfirm={() => (confirmAccount ? deleteAccount(confirmAccount) : undefined)}
         onOpenChange={(o) => !o && setConfirmAccount(null)}
       />
@@ -232,6 +234,7 @@ type AccountItemProps = {
 };
 
 function SortableAccountItem(props: AccountItemProps) {
+  const { t } = useI18n();
   const { account, dragHandle: providedHandle, ...rest } = props;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: account.id,
@@ -248,7 +251,7 @@ function SortableAccountItem(props: AccountItemProps) {
       variant="ghost"
       size="icon"
       className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing -ml-1.5"
-      aria-label="Изменить порядок счета"
+      aria-label={t("accounts.aria.reorder")}
       {...attributes}
       {...listeners}
     >
@@ -276,6 +279,7 @@ function AccountItem({
   dragHandle,
   isSorting,
 }: AccountItemProps) {
+  const { t } = useI18n();
   const { ownerUid } = useAuth();
   const editNameId = useId();
   const colorId = useId();
@@ -465,16 +469,16 @@ function AccountItem({
         <Button
           variant="secondary"
           onClick={() => setShowBalancesEditor((s) => !s)}
-          title={showBalancesEditor ? "Свернуть" : "Править"}
+          title={showBalancesEditor ? t("common.collapse") : t("common.edit")}
         >
           <PenLine className="h-4 w-4" />
           <span className={cn({ "max-lg:hidden": !showBalancesEditor })}>
-            {showBalancesEditor ? "Свернуть" : "Править"}
+            {showBalancesEditor ? t("common.collapse") : t("common.edit")}
           </span>
         </Button>
-        <Button variant="destructive" onClick={onAskDelete} title="Удалить">
+        <Button variant="destructive" onClick={onAskDelete} title={t("common.delete")}>
           <Trash2 className="h-4 w-4" />
-          <span className="max-lg:hidden">Удалить</span>
+          <span className="max-lg:hidden">{t("common.delete")}</span>
         </Button>
       </div>
 
@@ -482,7 +486,7 @@ function AccountItem({
       {!showBalancesEditor ? (
         <div className="my-3 text-muted-foreground">
           {nonZeroBalances.length === 0 ? (
-            <span>Нет валют с ненулевым остатком</span>
+            <span>{t("accounts.no_nonzero_balances")}</span>
           ) : (
             <div className="flex flex-col gap-y-3">
               {nonZeroBalances.map((b) => {
@@ -520,22 +524,22 @@ function AccountItem({
       <div className="mt-4 grid justify-start gap-2">
         <div className="flex items-end gap-2">
           <div className="grid gap-1">
-            <Label htmlFor={editNameId}>Название</Label>
+            <Label htmlFor={editNameId}>{t("common.name")}</Label>
             <Input id={editNameId} className="max-w-xs" value={editName} onChange={(e) => setEditName(e.target.value)} />
           </div>
           <div className="grid gap-1">
-            <Label htmlFor={colorId}>Цвет</Label>
+            <Label htmlFor={colorId}>{t("accounts.color")}</Label>
             <input
               id={colorId}
               type="color"
               value={editColor}
               onChange={(e) => setEditColor(e.target.value)}
               className="h-9 w-10 overflow-hidden rounded cursor-pointer border"
-              title="Цвет заголовка"
+              title={t("accounts.color_title")}
             />
           </div>
           <div className="grid gap-1">
-            <Label htmlFor={iconFileId}>Иконка</Label>
+            <Label htmlFor={iconFileId}>{t("accounts.icon")}</Label>
             <div className="flex items-center gap-3">
               {account.iconUrl && (
                 <img src={account.iconUrl} alt="" className="h-8 w-8 rounded-sm object-contain border bg-background" />
@@ -555,10 +559,10 @@ function AccountItem({
                   size="sm"
                   onClick={handleIconDelete}
                   disabled={uploadingIcon}
-                  title="Удалить иконку"
+                  title={t("accounts.icon_delete")}
                 >
                   <Trash2 className="h-4 w-4 mr-1 text-destructive" />
-                  <span className="lg:hidden">Удалить</span>
+                  <span className="lg:hidden">{t("common.delete")}</span>
                 </Button>
               ) : null}
             </div>
@@ -601,7 +605,7 @@ function AccountItem({
             loading={saving}
             disabled={!canSave}
           >
-            Обновить
+            {t("common.update")}
           </Button>
         </div>
       </div>

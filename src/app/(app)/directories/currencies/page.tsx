@@ -7,6 +7,7 @@ import { ConfirmDialog, InfoDialog } from "@/components/ui/confirm-dialog";
 import { Alert } from "@/components/ui/alert";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
+import { useI18n } from "@/contexts/i18n-context";
 import { Collections, SubCollections } from "@/types/collections";
 import { PenLine, Trash2 } from "lucide-react";
 import {
@@ -39,6 +40,7 @@ function compareCurrencies(a: Currency, b: Currency) {
 
 export default function CurrenciesPage() {
   const { ownerUid } = useAuth();
+  const { t } = useI18n();
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [newName, setNewName] = useState("");
   const [editing, setEditing] = useState<Record<string, { name: string; code: string } | undefined>>({});
@@ -76,7 +78,7 @@ export default function CurrenciesPage() {
 
   async function addCurrency() {
     if (!newName.trim()) {
-      setAddError("Пожалуйста, введите название валюты.");
+      setAddError(t("currencies.errors.name_required"));
       return;
     }
     setPendingAdd(true);
@@ -138,19 +140,19 @@ export default function CurrenciesPage() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Валюты</h1>
-      <p className="text-muted-foreground mt-1">Добавляйте, редактируйте и удаляйте валюты.</p>
+      <h1 className="text-2xl font-semibold tracking-tight">{t("nav.currencies")}</h1>
+      <p className="text-muted-foreground mt-1">{t("currencies.subtitle")}</p>
 
       <div className="mt-6 flex gap-2">
         <Input
-          placeholder="Название валюты"
+          placeholder={t("currencies.name_placeholder")}
           value={newName}
           onChange={(e) => {
             setNewName(e.target.value);
             if (addError) setAddError(null);
           }}
         />
-        <Button onClick={addCurrency} loading={pendingAdd}>Добавить</Button>
+        <Button onClick={addCurrency} loading={pendingAdd}>{t("common.add")}</Button>
       </div>
       {addError ? <Alert className="mt-2">{addError}</Alert> : null}
 
@@ -184,10 +186,10 @@ export default function CurrenciesPage() {
                     onClick={() => saveEdit(currency.id)}
                     disabled={!draftName.trim()}
                   >
-                    Сохранить
+                    {t("common.save")}
                   </Button>
                   <Button variant="ghost" onClick={() => setEditing((state) => ({ ...state, [currency.id]: undefined }))}>
-                    Отмена
+                    {t("common.cancel")}
                   </Button>
                 </>
               ) : (
@@ -195,14 +197,14 @@ export default function CurrenciesPage() {
                   <Button
                     variant="outline"
                     onClick={() => setEditing((state) => ({ ...state, [currency.id]: { name: currency.name, code: currency.code || "" } }))}
-                    title="Редактировать"
+                    title={t("common.edit")}
                   >
                     <PenLine className="h-4 w-4" />
-                    <span className="max-lg:hidden">Редактировать</span>
+                    <span className="max-lg:hidden">{t("common.edit")}</span>
                   </Button>
-                  <Button variant="destructive" onClick={() => askDeleteCurrency(currency)} title="Удалить">
+                  <Button variant="destructive" onClick={() => askDeleteCurrency(currency)} title={t("common.delete")}>
                     <Trash2 className="h-4 w-4" />
-                    <span className="max-lg:hidden">Удалить</span>
+                    <span className="max-lg:hidden">{t("common.delete")}</span>
                   </Button>
                 </>
               )}
@@ -213,21 +215,19 @@ export default function CurrenciesPage() {
 
       <ConfirmDialog
         open={Boolean(confirm)}
-        title="Удалить валюту?"
-        description={confirm ? `Валюта "${confirm.name}" будет удалена безвозвратно.` : undefined}
+        title={t("currencies.confirm.delete_title")}
+        description={confirm ? t("currencies.confirm.delete_desc").replace("{{name}}", confirm.name) : undefined}
         onConfirm={() => (confirm ? deleteCurrency(confirm.id) : undefined)}
         onOpenChange={(open) => !open && setConfirm(null)}
       />
       <InfoDialog
         open={Boolean(blocked)}
-        title="Нельзя удалить валюту"
+        title={t("currencies.blocked.title")}
         description={
           blocked
             ? blocked.count === -1
-              ? `Не удалось проверить использование валюты "${blocked.name}".
-Возможно, не хватает прав на чтение. Попробуйте позже или обратитесь к администратору.`
-              : `Валюта "${blocked.name}" используется в ${blocked.count} счете(ах).
-Удалите её из счетов прежде чем удалять валюту.`
+              ? t("currencies.blocked.desc_check_failed").replace("{{name}}", blocked.name)
+              : t("currencies.blocked.desc_in_use").replace("{{name}}", blocked.name).replace("{{count}}", String(blocked.count))
             : undefined
         }
         onOpenChange={(open) => !open && setBlocked(null)}
@@ -237,6 +237,7 @@ export default function CurrenciesPage() {
 }
 
 function CurrencyCodeSelect({ value, onChange, disabled }: { value: string; onChange: (code: string) => void; disabled?: boolean }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const options = useMemo(() => {
@@ -245,11 +246,11 @@ function CurrencyCodeSelect({ value, onChange, disabled }: { value: string; onCh
     return ISO_CURRENCIES.filter((c) => c.code.toLowerCase().includes(q) || c.name.toLowerCase().includes(q));
   }, [query]);
 
-  const label = value ? `${value} — ${ISO_CURRENCIES.find((c) => c.code === value)?.name ?? ""}` : "Выбрать код";
+  const label = value ? `${value} — ${ISO_CURRENCIES.find((c) => c.code === value)?.name ?? ""}` : t("currencies.choose_code");
 
   return (
     <div className="flex items-center gap-2 shrink-0">
-      <div className="text-xs text-muted-foreground">Код</div>
+      <div className="text-xs text-muted-foreground">{t("currencies.code")}</div>
       <div className="relative">
         <div>
           <button type="button" className="border rounded-md px-2 h-8 text-sm disabled:opacity-50" onClick={() => !disabled && setOpen((v) => !v)} disabled={disabled}>
@@ -260,7 +261,7 @@ function CurrencyCodeSelect({ value, onChange, disabled }: { value: string; onCh
           <div className="absolute z-10 mt-1 w-64 rounded-md border bg-popover p-2 shadow-md">
             <input
               className="w-full h-8 border rounded px-2 text-sm mb-2"
-              placeholder="Поиск..."
+              placeholder={t("stats.search")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -280,12 +281,12 @@ function CurrencyCodeSelect({ value, onChange, disabled }: { value: string; onCh
                 </button>
               ))}
               {options.length === 0 ? (
-                <div className="py-4 text-center text-sm text-muted-foreground">Ничего не найдено</div>
+                <div className="py-4 text-center text-sm text-muted-foreground">{t("stats.nothing_found")}</div>
               ) : null}
             </div>
             <div className="mt-2 flex items-center justify-between">
-              <button type="button" className="text-sm text-muted-foreground" onClick={() => onChange("")}>Очистить</button>
-              <button type="button" className="text-sm" onClick={() => setOpen(false)}>Закрыть</button>
+              <button type="button" className="text-sm text-muted-foreground" onClick={() => onChange("")}>{t("common.clear")}</button>
+              <button type="button" className="text-sm" onClick={() => setOpen(false)}>{t("common.close")}</button>
             </div>
           </div>
         ) : null}

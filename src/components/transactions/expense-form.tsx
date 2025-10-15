@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { DatePicker } from "@/components/date-picker";
 import { Label } from "@/components/ui/label";
+import { useI18n } from "@/contexts/i18n-context";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
@@ -39,7 +40,8 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
   const [date, setDate] = useState(new Date());
   const [error, setError] = useState<string | null>(null);
   const currencyName = (id: string) => currencies.find((c) => c.id === id)?.name ?? id;
-  const submitLabel = editingTx ? "Сохранить" : "Добавить";
+  const { t } = useI18n();
+  const submitLabel = editingTx ? t("transfer.submit.save") : t("transfer.submit.add");
   const amountPreview = useMemo(() => getAmountPreview(amount), [amount]);
 
   const visibleAccounts = useMemo(() => {
@@ -87,12 +89,12 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
   }
   async function submit() {
     if (!accountId || !currencyId || !categoryId || !amount.trim()) {
-      setError("Заполните обязательные поля.");
+      setError(t("transfer.errors.required"));
       return;
     }
     const evaluated = evaluateAmountExpression(amount);
     if (evaluated == null) {
-      setError("Введите корректное выражение суммы.");
+      setError(t("transfer.errors.amount_expr"));
       return;
     }
     const normalizedAmount = Number(roundMoneyAmount(evaluated).toFixed(2));
@@ -135,7 +137,7 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
       onDone?.();
     } catch (err) {
       console.error("Failed to save expense transaction", err);
-      setError("Не удалось сохранить транзакцию. Попробуйте ещё раз.");
+      setError(t("transfer.errors.save_failed"));
     }
   }
 
@@ -209,10 +211,10 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
     <div className="grid gap-4" onKeyDownCapture={handleMetaEnterSubmit}>
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div className="grid gap-1">
-          <Label htmlFor={accSelId}>Счет</Label>
+          <Label htmlFor={accSelId}>{t("nav.accounts")}</Label>
           <Select value={accountId} onValueChange={setAccountId}>
             <SelectTrigger id={accSelId} className="font-semibold sm:w-56">
-              <SelectValue placeholder="Выберите" />
+              <SelectValue placeholder={t("common.choose")} />
             </SelectTrigger>
             <SelectContent>
               {visibleAccounts.map((a) => (
@@ -227,14 +229,14 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
           </Select>
         </div>
         <div className="grid gap-1 md:w-auto">
-          <Label htmlFor={dateId}>Дата</Label>
+          <Label htmlFor={dateId}>{t("common.date")}</Label>
           <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
         </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="grid gap-1">
-          <Label htmlFor={amountId}>Сумма</Label>
+          <Label htmlFor={amountId}>{t("common.amount")}</Label>
           <div className="relative">
             <Input
               id={amountId}
@@ -252,10 +254,10 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
           </div>
         </div>
         <div className="grid gap-1 sm:w-44">
-          <Label htmlFor={currencySelId}>Валюта</Label>
+          <Label htmlFor={currencySelId}>{t("common.currency")}</Label>
           <Select value={currencyId} onValueChange={setCurrencyId}>
             <SelectTrigger id={currencySelId} className="w-full">
-              <SelectValue placeholder="Выберите" />
+              <SelectValue placeholder={t("common.choose")} />
             </SelectTrigger>
             <SelectContent>
               {currencies.map((c) => (
@@ -268,20 +270,20 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
 
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="grid gap-1">
-          <Label htmlFor={categorySelId}>Категория</Label>
+          <Label htmlFor={categorySelId}>{t("nav.categories")}</Label>
           <Combobox
             id={categorySelId}
             value={categoryId}
             onChange={setCategoryId}
             options={categoryOptions}
-            placeholder="Выберите"
-            searchPlaceholder="Поиск категории"
+            placeholder={t("common.choose")}
+            searchPlaceholder={t("stats.search")}
             triggerClassName="w-full justify-between sm:w-64"
           />
         </div>
         <div className="grid min-w-0 flex-1 gap-1">
-          <Label htmlFor={commentId}>Комментарий</Label>
-          <Input id={commentId} placeholder="Опционально" value={comment} onChange={(e) => setComment(e.target.value)} />
+          <Label htmlFor={commentId}>{t("common.comment")}</Label>
+          <Input id={commentId} placeholder={t("common.optional")} value={comment} onChange={(e) => setComment(e.target.value)} />
         </div>
       </div>
 
@@ -289,7 +291,7 @@ export function ExpenseForm({ accounts, currencies, categories, editingTx, onDon
 
       <div className="flex justify-end gap-2 pt-1">
         {editingTx ? (
-          <Button variant="ghost" onClick={() => onDone?.()}>Отменить</Button>
+          <Button variant="ghost" onClick={() => onDone?.()}>{t("common.cancel")}</Button>
         ) : null}
         <Button onClick={submit}>{submitLabel}</Button>
       </div>

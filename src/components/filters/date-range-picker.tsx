@@ -7,6 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format, startOfDay, startOfMonth } from "date-fns";
 import { subDays } from "date-fns/subDays";
 import { ru } from "date-fns/locale";
+import { useI18n } from "@/contexts/i18n-context";
 
 export type DateRange = { from?: Date; to?: Date };
 
@@ -26,6 +27,7 @@ export function DateRangePicker({
     if (open) setTemp(value || {});
   }, [open]);
 
+  const { t } = useI18n();
   const label = useMemo(() => {
     const { from, to } = value || {};
     if (from && to) {
@@ -35,8 +37,8 @@ export function DateRangePicker({
     }
     if (from && !to) return `${format(from, "dd.MM.yyyy")} — …`;
     if (!from && to) return `… — ${format(to, "dd.MM.yyyy")}`;
-    return "Все даты";
-  }, [value]);
+    return t("filters.dates.all");
+  }, [value, t]);
 
   function setPreset(preset: "day" | "weekSliding" | "monthSliding" | "yearSliding" | "sinceMonthStart") {
     const now = new Date();
@@ -77,17 +79,17 @@ export function DateRangePicker({
             locale={ru}
           />
           <div className="w-48 md:w-56 grid gap-2">
-            <div className="text-sm font-medium">Быстрый выбор</div>
+            <div className="text-sm font-medium">{t("filters.dates.quick")}</div>
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="secondary" onClick={() => setPreset("day")}>За день</Button>
-              <Button variant="secondary" onClick={() => setPreset("weekSliding")}>За неделю</Button>
-              <Button variant="secondary" onClick={() => setPreset("monthSliding")}>За месяц</Button>
-              <Button variant="secondary" onClick={() => setPreset("yearSliding")}>За год</Button>
-              <Button variant="secondary" onClick={() => setPreset("sinceMonthStart")} className="col-span-2">С начала месяца</Button>
+              <Button variant="secondary" onClick={() => setPreset("day")}>{t("filters.dates.day")}</Button>
+              <Button variant="secondary" onClick={() => setPreset("weekSliding")}>{t("filters.dates.week")}</Button>
+              <Button variant="secondary" onClick={() => setPreset("monthSliding")}>{t("filters.dates.month")}</Button>
+              <Button variant="secondary" onClick={() => setPreset("yearSliding")}>{t("filters.dates.year")}</Button>
+              <Button variant="secondary" onClick={() => setPreset("sinceMonthStart")} className="col-span-2">{t("filters.dates.since_month_start")}</Button>
             </div>
             <div className="flex items-center justify-between gap-2 pt-1">
-              <Button variant="ghost" onClick={clear}>Сбросить</Button>
-              <Button onClick={() => { onChange(temp || {}); setOpen(false); }}>Применить</Button>
+              <Button variant="ghost" onClick={clear}>{t("filters.accounts.reset")}</Button>
+              <Button onClick={() => { onChange(temp || {}); setOpen(false); }}>{t("filters.apply")}</Button>
             </div>
           </div>
         </div>
@@ -95,4 +97,3 @@ export function DateRangePicker({
     </Popover>
   );
 }
-
