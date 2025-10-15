@@ -2,6 +2,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AppAuthProvider from "@/contexts/auth-provider";
+import { I18nProvider, useI18n } from "@/contexts/i18n-context";
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { usePathname, useRouter } from "next/navigation";
@@ -56,6 +57,16 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function LangEffect({ children }: { children: React.ReactNode }) {
+  const { lang } = useI18n();
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.lang = lang;
+    }
+  }, [lang]);
+  return <>{children}</>;
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -66,7 +77,11 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
           <AppAuthProvider>
-            <AuthGate>{children}</AuthGate>
+            <I18nProvider>
+              <LangEffect>
+                <AuthGate>{children}</AuthGate>
+              </LangEffect>
+            </I18nProvider>
           </AppAuthProvider>
         </ThemeProvider>
       </body>

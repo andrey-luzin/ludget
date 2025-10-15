@@ -9,6 +9,7 @@ export type ThemePreference = {
 
 export type PreferencesStore = {
   theme: ThemePreference;
+  language?: "en" | "ru";
 };
 
 const DEFAULT_PREFERENCES: PreferencesStore = {
@@ -16,6 +17,7 @@ const DEFAULT_PREFERENCES: PreferencesStore = {
     useSystemTheme: true,
     theme: ThemeMode.Light,
   },
+  language: undefined,
 };
 
 function normalizeThemeMode(value: unknown): ThemeMode {
@@ -29,6 +31,7 @@ function normalizePreferences(raw: Partial<PreferencesStore> | null | undefined)
       useSystemTheme: raw.theme?.useSystemTheme ?? DEFAULT_PREFERENCES.theme.useSystemTheme,
       theme: normalizeThemeMode(raw.theme?.theme),
     },
+    language: (raw.language === "ru" || raw.language === "en") ? raw.language : DEFAULT_PREFERENCES.language,
   };
 }
 
@@ -63,6 +66,7 @@ export function updatePreferences(partial: Partial<PreferencesStore>) {
       useSystemTheme: partial.theme?.useSystemTheme ?? current.theme.useSystemTheme,
       theme: normalizeThemeMode(partial.theme?.theme ?? current.theme.theme),
     },
+    language: (partial.language === "ru" || partial.language === "en") ? partial.language : (current.language ?? DEFAULT_PREFERENCES.language),
   };
   savePreferences(next);
   return next;
