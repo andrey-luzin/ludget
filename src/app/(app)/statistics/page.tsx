@@ -5,6 +5,7 @@ import { DateRangePicker, type DateRange } from "@/components/filters/date-range
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { UserStatus } from "@/types/user-profile";
 import { db } from "@/lib/firebase";
 import { Collections } from "@/types/collections";
 import type { Account, Category, Currency } from "@/types/entities";
@@ -29,7 +30,8 @@ export default function StatisticsPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [tab, setTab] = useState("categories");
 
-  const { ownerUid } = useAuth();
+  const { ownerUid, profile } = useAuth();
+  const isPremium = (profile?.status || UserStatus.Default) === UserStatus.Premium;
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<Tx[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -108,6 +110,11 @@ export default function StatisticsPage() {
     setRatesError(null);
     setRatesLoading(true);
     try {
+      if (!isPremium) {
+        // Do not hit currency API for non-premium users
+        setRatesError("Доступ к курсам валют ограничен. Доступно только для Premium-пользователей.");
+        return;
+      }
       const neededCodes = currencies.map((c) => c.code).filter(Boolean) as string[];
       if (targetCode) {
         const res = await getRatesWithCache(targetCode, { force, neededCodes });
@@ -131,7 +138,7 @@ export default function StatisticsPage() {
     if (targetCode) {
       load();
     }
-  }, [targetCode]);
+  }, [targetCode, isPremium]);
 
   const from = useMemo(() => dateRange.from ?? new Date(0), [dateRange]);
   const to = useMemo(() => dateRange.to ?? new Date(), [dateRange]);
@@ -192,7 +199,15 @@ export default function StatisticsPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">Статистика</h1>
-      {ratesError ? (
+      {!isPremium ? (
+        <div className="rounded-md border border-yellow-300/50 bg-yellow-50 p-3 text-sm flex items-start justify-between gap-3">
+          <div>
+            <div className="font-medium">Ограничение тарифного плана</div>
+            <div className="text-muted-foreground">Курсы валют доступны только для Premium-пользователей. Данные отображаются без конвертации.</div>
+          </div>
+        </div>
+      ) : null}
+      {ratesError && isPremium ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm flex items-start justify-between gap-3">
           <div>
             <div className="font-medium">Проблема с курсами валют</div>
@@ -251,7 +266,7 @@ export default function StatisticsPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="sm" onClick={() => refreshRates(true)} loading={ratesLoading} disabled={ratesLoading}>Обновить курсы сейчас</Button>
+                <Button variant="outline" size="sm" onClick={() => refreshRates(true)} loading={ratesLoading} disabled={ratesLoading || !isPremium} title={!isPremium ? "Доступно только для Premium" : undefined}>Обновить курсы сейчас</Button>
               </div>
             </div>
             <TabsContent value="categories" className="mt-2 p-2">

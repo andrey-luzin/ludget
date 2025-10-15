@@ -6,6 +6,7 @@ import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { Collections } from "@/types/collections";
 import type { UserProfile } from "@/types/user-profile";
+import { UserStatus } from "@/types/user-profile";
 
 type AuthContextValue = {
   user: User | null;
@@ -57,12 +58,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             {
               workspaceUid: user.uid,
               showOnlyMyAccounts: false,
+              status: UserStatus.Default,
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
             },
             { merge: true }
           );
-          setProfile({ workspaceUid: user.uid, showOnlyMyAccounts: false });
+          setProfile({ workspaceUid: user.uid, showOnlyMyAccounts: false, status: UserStatus.Default });
           setProfileLoading(false);
           return;
         }
