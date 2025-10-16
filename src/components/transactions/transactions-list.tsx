@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import type { Account, Category, Currency, Source } from "@/types/entities";
 import { AccountsMultiSelect } from "@/components/filters/accounts-multi-select";
 import { useI18n } from "@/contexts/i18n-context";
+import { roundMoneyAmount } from "@/lib/money";
 
 type TxType = "expense" | "income" | "transfer" | "exchange";
 
@@ -42,7 +43,7 @@ export function TransactionsList({
   editingId?: string | null;
 }) {
   const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [items, setItems] = useState<Tx[]>([]);
   const [accountFilter, setAccountFilter] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
@@ -50,6 +51,7 @@ export function TransactionsList({
   const [pendingDelete, setPendingDelete] = useState(false);
   const accFilterId = useId();
   const dateFilterId = useId();
+  
   const hasFilters =
     accountFilter.length > 0 || Boolean(dateRange?.from || dateRange?.to);
 
@@ -334,6 +336,27 @@ export function TransactionsList({
                       <>
                         <span className="text-red-600 mr-2">-{it.amountFrom} {curName(it.fromCurrencyId)}</span>
                         <span className="text-green-600">+{it.amountTo} {curName(it.toCurrencyId)}</span>
+                        {Number(it?.amountFrom) > 0 && Number(it?.amountTo) > 0 ? (
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {(() => {
+                              const from = Number(it.amountFrom);
+                              const to = Number(it.amountTo);
+                              if (!(isFinite(from) && isFinite(to)) || from <= 0 || to <= 0) {
+                                return null;
+                              }
+                              const direct = to / from; // 1 FROM = direct TO
+                              const invert = from / to;  // 1 TO = invert FROM
+                              const showFromIsBase = direct >= 1; // expensive -> cheap
+                              const baseCur = showFromIsBase ? it.fromCurrencyId : it.toCurrencyId;
+                              const quoteCur = showFromIsBase ? it.toCurrencyId : it.fromCurrencyId;
+                              const rate = showFromIsBase ? direct : invert;
+                              const rateStr = roundMoneyAmount(rate)
+                              console.log('rateStr', rateStr, rate);
+                              
+                              return `1 ${curName(baseCur)} = ${rateStr} ${curName(quoteCur)}`;
+                            })()}
+                          </div>
+                        ) : null}
                       </>
                     ) : (
                       <>
