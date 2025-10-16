@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { format, startOfDay, startOfMonth } from "date-fns";
 import { subDays } from "date-fns/subDays";
-import { ru } from "date-fns/locale";
+import { ru, enUS } from "date-fns/locale";
 import { useI18n } from "@/contexts/i18n-context";
 
 export type DateRange = { from?: Date; to?: Date };
@@ -27,7 +27,8 @@ export function DateRangePicker({
     if (open) setTemp(value || {});
   }, [open]);
 
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const locale = lang === "ru" ? ru : enUS;
   const label = useMemo(() => {
     const { from, to } = value || {};
     if (from && to) {
@@ -76,7 +77,7 @@ export function DateRangePicker({
             numberOfMonths={2}
             defaultMonth={temp.from ?? value.from ?? new Date()}
             className="rounded-md"
-            locale={ru}
+            locale={locale}
           />
           <div className="w-48 md:w-56 grid gap-2">
             <div className="text-sm font-medium">{t("filters.dates.quick")}</div>

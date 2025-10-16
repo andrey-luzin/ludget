@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { ru } from "date-fns/locale";
+import { ru, enUS } from "date-fns/locale";
+import { useI18n } from "@/contexts/i18n-context";
 
 export function DatePicker({
   value,
@@ -19,6 +20,8 @@ export function DatePicker({
   triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const { lang } = useI18n();
+  const locale = lang === "ru" ? ru : enUS;
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -32,7 +35,7 @@ export function DatePicker({
           selected={value}
           onSelect={(d) => d && (onChange(d), setOpen(false))}
           defaultMonth={value}
-          locale={ru}
+          locale={locale}
         />
       </PopoverContent>
     </Popover>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useId } from "react";
 import { db } from "@/lib/firebase";
-import { ru } from "date-fns/locale";
+import { ru, enUS } from "date-fns/locale";
 import { applyBalanceAdjustments } from "@/lib/account-balances";
 import { useAuth } from "@/contexts/auth-context";
 import { Collections } from "@/types/collections";
@@ -419,7 +419,8 @@ function DateRangePicker({
 }) {
   const [open, setOpen] = useState(false);
   const [temp, setTemp] = useState<{ from?: Date; to?: Date }>(value || {});
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const locale = lang === "ru" ? ru : enUS;
 
   // Initialize temp when opening
   useEffect(() => {
@@ -474,7 +475,7 @@ function DateRangePicker({
             numberOfMonths={2}
             defaultMonth={temp.from ?? value.from ?? new Date()}
             className="rounded-md"
-            locale={ru}
+            locale={locale}
           />
           <div className="w-48 md:w-56 grid gap-2">
             <div className="text-sm font-medium">{t("filters.dates.quick")}</div>
