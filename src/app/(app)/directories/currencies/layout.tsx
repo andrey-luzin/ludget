@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Валюты",
-};
+import { Title } from "@/components/title";
 
 export default function CurrenciesLayout({ children }: { children: React.ReactNode }) {
-  return children as React.ReactElement;
+  return (
+    <>
+      <Title titleKey="nav.currencies" />
+      {children as React.ReactElement}
+    </>
+  );
 }

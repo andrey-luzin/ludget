@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Источники дохода",
-};
+import { Title } from "@/components/title";
 
 export default function IncomeSourcesLayout({ children }: { children: React.ReactNode }) {
-  return children as React.ReactElement;
+  return (
+    <>
+      <Title titleKey="nav.income_sources" />
+      {children as React.ReactElement}
+    </>
+  );
 }

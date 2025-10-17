@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Категории",
-};
+import { Title } from "@/components/title";
 
 export default function CategoriesLayout({ children }: { children: React.ReactNode }) {
-  return children as React.ReactElement;
+  return (
+    <>
+      <Title titleKey="nav.categories" />
+      {children as React.ReactElement}
+    </>
+  );
 }

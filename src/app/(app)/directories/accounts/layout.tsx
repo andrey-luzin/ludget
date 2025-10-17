@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Счета",
-};
+import { Title } from "@/components/title";
 
 export default function AccountsLayout({ children }: { children: React.ReactNode }) {
-  return children as React.ReactElement;
+  return (
+    <>
+      <Title titleKey="nav.accounts" />
+      {children as React.ReactElement}
+    </>
+  );
 }

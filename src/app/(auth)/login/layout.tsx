@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
+import { Title } from "@/components/title";
 
 export const metadata: Metadata = {
-  title: "Вход",
+  title: "Ludget",
   robots: { index: false },
 };
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
-  return children as React.ReactElement;
+  return (
+    <>
+      <Title titleKey="login.title" />
+      {children as React.ReactElement}
+    </>
+  );
 }
