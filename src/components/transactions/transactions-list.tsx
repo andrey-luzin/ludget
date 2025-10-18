@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import type { Account, Category, Currency, Source } from "@/types/entities";
 import { AccountsMultiSelect } from "@/components/filters/accounts-multi-select";
 import { useI18n } from "@/contexts/i18n-context";
-import { roundMoneyAmount } from "@/lib/money";
+import { roundMoneyAmount, formatMoneyAmount } from "@/lib/money";
 
 type TxType = "expense" | "income" | "transfer" | "exchange";
 
@@ -334,8 +334,8 @@ export function TransactionsList({
                   <div className="text-sm font-medium sm:text-right">
                     {type === "exchange" ? (
                       <>
-                        <span className="text-red-600 mr-2">-{it.amountFrom} {curName(it.fromCurrencyId)}</span>
-                        <span className="text-green-600">+{it.amountTo} {curName(it.toCurrencyId)}</span>
+                        <span className="text-red-600 mr-2">-{formatMoneyAmount(Number(it.amountFrom))} {curName(it.fromCurrencyId)}</span>
+                        <span className="text-green-600">+{formatMoneyAmount(Number(it.amountTo))} {curName(it.toCurrencyId)}</span>
                         {Number(it?.amountFrom) > 0 && Number(it?.amountTo) > 0 ? (
                           <div className="text-xs text-muted-foreground mt-0.5">
                             {(() => {
@@ -360,7 +360,7 @@ export function TransactionsList({
                       </>
                     ) : (
                       <>
-                        <span className={Number(it.amount) >= 0 ? "text-foreground" : "text-red-600"}>{it.amount}</span>
+                        <span className={Number(it.amount) >= 0 ? "text-foreground" : "text-red-600"}>{formatMoneyAmount(Number(it.amount))}</span>
                         {it.currencyId ? <span className="text-muted-foreground ml-1">{curName(it.currencyId)}</span> : null}
                       </>
                     )}

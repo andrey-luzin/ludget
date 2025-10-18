@@ -32,6 +32,7 @@ import {
 } from "firebase/firestore";
 import { Collections, SubCollections } from "@/types/collections";
 import type { Account, Balance, Currency } from "@/types/entities";
+import { formatMoneyAmount } from "@/lib/money";
 
 export default function AccountsPage() {
   const { t } = useI18n();
@@ -502,7 +503,7 @@ function AccountItem({
                           : "text-rose-700 bg-rose-50 dark:text-rose-400 dark:bg-rose-400/10"
                       )}
                     >
-                      {b.amount}
+                      {formatMoneyAmount(Number(b.amount))}
                     </span>
                     <span
                       className={cn("font-medium", {

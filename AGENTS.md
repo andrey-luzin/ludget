@@ -12,9 +12,16 @@
 - Move all event handlers into separate named functions, rather than defining them inline inside JSX.
 - Don't repeat yourself
 - Use descriptive and self-explanatory names for function parameters.
+- Use the utility `formatMoneyAmount` from `src/lib/money.ts` to render amounts in UI.
+- `formatMoneyAmount` internally uses `roundMoneyAmount` (floor to 2 decimals) and inserts a narrow no-break space (U+202F) for thousands, e.g.:
+- When showing amount with a currency code/name, prefer the pattern: ```${formatMoneyAmount(value)} ${code}```
 
 # Git instructions
 If completing the user's task requires writing or modifying files:
 - Do not modify or amend existing commits.
 - **Do not automatically commit changes.** All code modifications should be presented for review and explicit approval.
 - **Do not create new branches or push to existing branches.**
+
+Money formatting rule
+
+

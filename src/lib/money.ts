@@ -40,3 +40,17 @@ export function getAmountPreview(raw: string): string | null {
   const rounded = roundMoneyAmount(evaluated).toFixed(2);
   return `=${rounded}`;
 }
+
+// Format money amounts with thin spaces as thousand separators.
+// Examples: 12333 => "12 333", 12333.83 => "12 333.83"
+export function formatMoneyAmount(amount: number): string {
+  const rounded = roundMoneyAmount(Number(amount));
+  const sign = rounded < 0 ? "-" : "";
+  const abs = Math.abs(rounded);
+  // Keep up to 2 decimals but trim trailing zeros
+  const fixed = abs.toFixed(2);
+  const [intPartRaw, fracRaw] = fixed.split(".");
+  const intPart = intPartRaw.replace(/\B(?=(\d{3})+(?!\d))/g, "\u202F");
+  const frac = fracRaw.replace(/0+$/, "");
+  return sign + intPart + (frac ? "." + frac : "");
+}

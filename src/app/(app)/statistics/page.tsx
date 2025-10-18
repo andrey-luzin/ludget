@@ -17,7 +17,7 @@ import { buildCategoryIndex, getDescendants } from "@/lib/categories";
 import { useChartPalette } from "@/hooks/use-chart-palette";
 import { CategoryListWithPopover } from "@/components/statistics/category-list";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { roundMoneyAmount } from "@/lib/money";
+import { roundMoneyAmount, formatMoneyAmount } from "@/lib/money";
 import { AccountsMultiSelect } from "@/components/filters/accounts-multi-select";
 import { useI18n } from "@/contexts/i18n-context";
 
@@ -245,7 +245,7 @@ export default function StatisticsPage() {
         <div className="p-4 flex items-center justify-between">
           <div>
             <div className="text-sm text-muted-foreground">{t("statistics.total_expenses")}</div>
-            <div className="text-2xl font-semibold">{`${roundMoneyAmount(total)} ${targetCode}`}</div>
+            <div className="text-2xl font-semibold">{`${formatMoneyAmount(total)} ${targetCode}`}</div>
           </div>
         </div>
         <div className="px-2 pb-4">
@@ -281,7 +281,7 @@ export default function StatisticsPage() {
                           <Cell key={`cell-${entry.id}`} fill={palette[index % palette.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(v: any) => `${roundMoneyAmount(Number(v))} ${targetCode}`} />
+                      <Tooltip formatter={(v: any) => `${formatMoneyAmount(Number(v))} ${targetCode}`} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>

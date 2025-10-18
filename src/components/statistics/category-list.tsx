@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { roundMoneyAmount } from "@/lib/money";
+import { roundMoneyAmount, formatMoneyAmount } from "@/lib/money";
 import type { Category } from "@/types/entities";
 import { getDescendants } from "@/lib/categories";
 import type { Account } from "@/types/entities";
@@ -62,8 +62,9 @@ export function CategoryListWithPopover({
 
   const formatAmount = (tx: Tx) => {
     const txCurCode = codeByCurrencyId.get(tx.currencyId || "") || targetCode;
-    if (!targetCode || !txCurCode) return `${roundMoneyAmount(Number(tx.amount || 0))}`;
-    return `${roundMoneyAmount(Number(tx.amount || 0))} ${txCurCode}`;
+    const val = formatMoneyAmount(Number(tx.amount || 0));
+    if (!targetCode || !txCurCode) return val;
+    return `${val} ${txCurCode}`;
   };
 
   return (
@@ -114,7 +115,7 @@ export function CategoryListWithPopover({
               </ul>
             </PopoverContent>
           </Popover>
-          <span className="font-medium">{`${roundMoneyAmount(s.value)} ${targetCode || ""}`}</span>
+          <span className="font-medium">{`${formatMoneyAmount(s.value)} ${targetCode || ""}`}</span>
         </li>
       ))}
     </ul>
