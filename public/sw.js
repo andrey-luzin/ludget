@@ -1,5 +1,5 @@
 /* Simple service worker for offline support and basic caching */
-/* eslint-disable no-restricted-globals */
+ 
 const CACHE_VERSION = 'v1';
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 

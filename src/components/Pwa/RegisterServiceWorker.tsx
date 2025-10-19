@@ -9,7 +9,7 @@ const registerServiceWorker = async (): Promise<void> => {
   try {
     await navigator.serviceWorker.register("/sw.js");
   } catch (error) {
-    // eslint-disable-next-line no-console
+     
     console.error("SW registration failed", error);
   }
 };
