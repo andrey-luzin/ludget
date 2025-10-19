@@ -1,0 +1,19 @@
+{
+  "name": "Ludget",
+  "short_name": "Ludget",
+  "description": "Personal budgeting and finance tracking",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2b2bff",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
+

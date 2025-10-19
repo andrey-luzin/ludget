@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { usePathname, useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 import { ThemeProvider } from "@/components/theme-provider";
+import RegisterServiceWorker from "@/components/Pwa/RegisterServiceWorker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -75,6 +76,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <RegisterServiceWorker />
         <ThemeProvider>
           <AppAuthProvider>
             <I18nProvider>
