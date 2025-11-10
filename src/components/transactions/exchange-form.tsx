@@ -177,101 +177,98 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
 
   return (
     <div className="grid gap-4" onKeyDownCapture={handleMetaEnterSubmit}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="grid gap-1">
-          <Label htmlFor={accSelId}>{t("nav.accounts")}</Label>
-          <Select value={accountId} onValueChange={setAccountId}>
-            <SelectTrigger id={accSelId} className="font-semibold sm:w-56">
-              <SelectValue placeholder={t("common.choose")} />
-            </SelectTrigger>
-            <SelectContent>
-              {visibleAccounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  <span className="flex items-center gap-2">
-                    {a.iconUrl ? <img src={a.iconUrl} alt="" className="h-4 w-4 object-contain" /> : null}
-                    <span className="font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid gap-1 md:w-auto">
-          <Label htmlFor={dateId}>{t("common.date")}</Label>
-          <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="grid gap-1">
-          <Label htmlFor={fromCurSelId}>{t("exchange.sold_currency")}</Label>
-          <Select value={fromCurrencyId} onValueChange={(value) => {
-            setFromCurrencyId(value);
-            setError((prev) => (prev === sameCurrencyError && value !== toCurrencyId ? null : prev));
-          }}>
-            <SelectTrigger id={fromCurSelId} className="w-full sm:w-44">
-              <SelectValue placeholder={t("common.choose")} />
-            </SelectTrigger>
-            <SelectContent>
-              {currencies.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid gap-1">
-          <Label htmlFor={fromAmtId}>{t("exchange.sold_amount")}</Label>
-          <div className="relative">
-            <Input
-              id={fromAmtId}
-              className={cn("w-full sm:w-56", amountFromPreview ? "pr-16" : undefined)}
-              type="text"
-              placeholder="0.0"
-              value={amountFrom}
-              onChange={handleAmountFromChange}
-            />
-            {amountFromPreview ? (
-              <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
-                {amountFromPreview}
-              </span>
-            ) : null}
+      <div className="grid grid-cols-[auto_1fr] gap-3 max-sm:flex flex-col">
+        <div className="flex flex-col gap-3">
+          <div className="grid gap-1">
+            <Label htmlFor={accSelId}>{t("nav.accounts")}</Label>
+            <Select value={accountId} onValueChange={setAccountId}>
+              <SelectTrigger id={accSelId} className="font-semibold sm:w-64 md:w-auto lg:w-64">
+                <SelectValue placeholder={t("common.choose")} />
+              </SelectTrigger>
+              <SelectContent>
+                {visibleAccounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    <span className="flex items-center gap-2">
+                      {a.iconUrl ? <img src={a.iconUrl} alt="" className="h-4 w-4 object-contain" /> : null}
+                      <span className="font-semibold" style={{ color: a.color || undefined }}>{a.name}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="grid gap-1">
-          <Label htmlFor={toCurSelId}>{t("exchange.bought_currency")}</Label>
-          <Select value={toCurrencyId} onValueChange={(value) => {
-            setToCurrencyId(value);
-            setError((prev) => (prev === sameCurrencyError && value !== fromCurrencyId ? null : prev));
-          }}>
-            <SelectTrigger id={toCurSelId} className="w-full sm:w-44">
-              <SelectValue placeholder={t("common.choose")} />
-            </SelectTrigger>
-            <SelectContent>
-              {currencies.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex gap-3 items-end">
+          <div className="grid gap-1 grow">
+            <Label htmlFor={fromAmtId}>{t("exchange.sold_amount")}</Label>
+            <div className="relative">
+              <Input
+                id={fromAmtId}
+                className={cn("w-full", amountFromPreview ? "pr-16" : undefined)}
+                type="text"
+                placeholder="0.0"
+                value={amountFrom}
+                onChange={handleAmountFromChange}
+              />
+              {amountFromPreview ? (
+                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                  {amountFromPreview}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div className="grid gap-1 max-sm:w-30 shrink-0">
+            <Label htmlFor={fromCurSelId}>{t("exchange.sold_currency")}</Label>
+            <Select value={fromCurrencyId} onValueChange={(value) => {
+              setFromCurrencyId(value);
+              setError((prev) => (prev === sameCurrencyError && value !== toCurrencyId ? null : prev));
+            }}>
+              <SelectTrigger id={fromCurSelId} className="w-full sm:w-32">
+                <SelectValue placeholder={t("common.choose")} />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="grid gap-1">
-          <Label htmlFor={toAmtId}>{t("exchange.bought_amount")}</Label>
-          <div className="relative">
-            <Input
-              id={toAmtId}
-              className={cn("w-full sm:w-56", amountToPreview ? "pr-16" : undefined)}
-              type="text"
-              placeholder="0.0"
-              value={amountTo}
-              onChange={handleAmountToChange}
-            />
-            {amountToPreview ? (
-              <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
-                {amountToPreview}
-              </span>
-            ) : null}
+        <div className="col-start-2 flex gap-3 items-end">
+          <div className="grid gap-1 grow">
+            <Label htmlFor={toAmtId}>{t("exchange.bought_amount")}</Label>
+            <div className="relative">
+              <Input
+                id={toAmtId}
+                className={cn("w-full", amountToPreview ? "pr-16" : undefined)}
+                type="text"
+                placeholder="0.0"
+                value={amountTo}
+                onChange={handleAmountToChange}
+              />
+              {amountToPreview ? (
+                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                  {amountToPreview}
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div className="grid gap-1 max-sm:w-30 shrink-0">
+            <Label htmlFor={toCurSelId}>{t("exchange.bought_currency")}</Label>
+            <Select value={toCurrencyId} onValueChange={(value) => {
+              setToCurrencyId(value);
+              setError((prev) => (prev === sameCurrencyError && value !== fromCurrencyId ? null : prev));
+            }}>
+              <SelectTrigger id={toCurSelId} className="w-full sm:w-32">
+                <SelectValue placeholder={t("common.choose")} />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -285,7 +282,11 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
 
       {error ? <Alert>{error}</Alert> : null}
 
-      <div className="flex justify-end gap-2 pt-1">
+      <div className="flex justify-between items-end gap-2 pt-1">
+        <div className="grid gap-1 md:w-auto">
+          <Label htmlFor={dateId}>{t("common.date")}</Label>
+          <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
+        </div>
         {editingTx ? (
           <Button variant="ghost" onClick={() => onDone?.()}>{t("common.cancel")}</Button>
         ) : null}

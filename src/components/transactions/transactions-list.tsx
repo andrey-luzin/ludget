@@ -43,7 +43,7 @@ export function TransactionsList({
   editingId?: string | null;
 }) {
   const { ownerUid, userUid, showOnlyMyAccounts } = useAuth();
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const [items, setItems] = useState<Tx[]>([]);
   const [accountFilter, setAccountFilter] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
@@ -187,211 +187,211 @@ export function TransactionsList({
 
   return (
     <>
-    <div className="mt-6 rounded-xl border bg-muted/30 p-4 md:p-5">
-      <div className="mb-5 md:mb-6 flex flex-wrap items-end gap-2">
-        <div className="grid gap-1">
-          <Label htmlFor={accFilterId}>{t("transactions.filter.account")}</Label>
-          <AccountsMultiSelect
-            accounts={accountOptions}
-            value={accountFilter}
-            onChange={setAccountFilter}
-            triggerId={accFilterId}
-          />
-        </div>
-
-        <div className="grid gap-1">
-          <Label htmlFor={dateFilterId}>{t("transactions.filter.period")}</Label>
-          <DateRangePicker value={dateRange} onChange={setDateRange} triggerId={dateFilterId} />
-        </div>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="ml-auto"
-          disabled={!hasFilters}
-          onClick={resetFilters}
-        >
-          {t("filters.reset_filters")}
-        </Button>
-      </div>
-
-      <div className="grid gap-4">
-        {grouped.map(([day, arr]) => (
-          <div key={day} className="">
-            <div className="text-sm text-muted-foreground mb-1">{format(parseISO(day), "dd.MM.yyyy")}</div>
-            <div className="grid gap-2">
-              {arr.map((it) => (
-                <div
-                  key={it.id}
-                  className="flex flex-col gap-3 rounded-md border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="space-y-1 flex sm:flex-1 sm:items-center gap-1 sm:gap-2 sm:space-y-0">
-                    {type === "expense" ? (
-                      <>
-                        {/* Account indicator (icon or truncated name) */}
-                        {accIcon(it.accountId) ? (
-                          <img
-                            src={accIcon(it.accountId)!}
-                            alt=""
-                            title={accName(it.accountId)}
-                            className="inline-block h-6 w-6 align-[-2px] object-contain"
-                          />
-                        ) : (
-                          <span
-                            title={accName(it.accountId)}
-                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
-                            style={{ color: accColor(it.accountId) || undefined }}
-                          >
-                            {accName(it.accountId)}
-                          </span>
-                        )}
-                        <span className="font-medium">{catName(it.categoryId)}</span>
-                        {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
-                      </>
-                    ) : type === "income" ? (
-                      <>
-                        {/* Account indicator (icon or truncated name) */}
-                        {accIcon(it.accountId) ? (
-                          <img
-                            src={accIcon(it.accountId)!}
-                            alt=""
-                            title={accName(it.accountId)}
-                            className="inline-block h-6 w-6 align-[-2px] object-contain"
-                          />
-                        ) : (
-                          <span
-                            title={accName(it.accountId)}
-                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
-                            style={{ color: accColor(it.accountId) || undefined }}
-                          >
-                            {accName(it.accountId)}
-                          </span>
-                        )}
-                        <span className="mx-1.5 text-muted-foreground">·</span>
-                        <span className="font-medium">{srcName(it.sourceId)}</span>
-                        {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
-                      </>
-                    ) : type === "transfer" ? (
-                      <>
-                        {accIcon(it.fromAccountId) ? (
-                          <img
-                            src={accIcon(it.fromAccountId)!}
-                            alt=""
-                            title={accName(it.fromAccountId)}
-                            className="inline-block h-6 w-6 align-[-2px] object-contain"
-                          />
-                        ) : (
-                          <span
-                            title={accName(it.fromAccountId)}
-                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
-                            style={{ color: accColor(it.fromAccountId) || undefined }}
-                          >
-                            {accName(it.fromAccountId)}
-                          </span>
-                        )}
-                        <span className="mx-1.5">→</span>
-                        {accIcon(it.toAccountId) ? (
-                          <img
-                            src={accIcon(it.toAccountId)!}
-                            alt=""
-                            title={accName(it.toAccountId)}
-                            className="inline-block h-6 w-6 align-[-2px] object-contain"
-                          />
-                        ) : (
-                          <span
-                            title={accName(it.toAccountId)}
-                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
-                            style={{ color: accColor(it.toAccountId) || undefined }}
-                          >
-                            {accName(it.toAccountId)}
-                          </span>
-                        )}
-                        {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
-                      </>
-                    ) : (
-                      <>
-                        {accIcon(it.accountId) ? (
-                          <img
-                            src={accIcon(it.accountId)!}
-                            alt=""
-                            title={accName(it.accountId)}
-                            className="inline-block h-6 w-6 align-[-2px] object-contain"
-                          />
-                        ) : (
-                          <span
-                            title={accName(it.accountId)}
-                            className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
-                            style={{ color: accColor(it.accountId) || undefined }}
-                          >
-                            {accName(it.accountId)}
-                          </span>
-                        )}
-                        {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
-                      </>
-                    )}
-                  </div>
-                  <div className="text-sm font-medium sm:text-right">
-                    {type === "exchange" ? (
-                      <>
-                        <span className="text-red-600 mr-2">-{formatMoneyAmount(Number(it.amountFrom))} {curName(it.fromCurrencyId)}</span>
-                        <span className="text-green-600">+{formatMoneyAmount(Number(it.amountTo))} {curName(it.toCurrencyId)}</span>
-                        {Number(it?.amountFrom) > 0 && Number(it?.amountTo) > 0 ? (
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            {(() => {
-                              const from = Number(it.amountFrom);
-                              const to = Number(it.amountTo);
-                              if (!(isFinite(from) && isFinite(to)) || from <= 0 || to <= 0) {
-                                return null;
-                              }
-                              const direct = to / from; // 1 FROM = direct TO
-                              const invert = from / to;  // 1 TO = invert FROM
-                              const showFromIsBase = direct >= 1; // expensive -> cheap
-                              const baseCur = showFromIsBase ? it.fromCurrencyId : it.toCurrencyId;
-                              const quoteCur = showFromIsBase ? it.toCurrencyId : it.fromCurrencyId;
-                              const rate = showFromIsBase ? direct : invert;
-                              const rateStr = roundMoneyAmount(rate)
-                              console.log('rateStr', rateStr, rate);
-                              
-                              return `1 ${curName(baseCur)} = ${rateStr} ${curName(quoteCur)}`;
-                            })()}
-                          </div>
-                        ) : null}
-                      </>
-                    ) : (
-                      <>
-                        <span className={Number(it.amount) >= 0 ? "text-foreground" : "text-red-600"}>{formatMoneyAmount(Number(it.amount))}</span>
-                        {it.currencyId ? <span className="text-muted-foreground ml-1">{curName(it.currencyId)}</span> : null}
-                      </>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 sm:justify-end">
-                    <Button
-                      variant="ghost"
-                      onClick={() => onEdit?.(it)}
-                      disabled={editingId === it.id}
-                      title={t("common.edit")}
-                    >
-                      <PenLine className="h-4 w-4" />
-                      <span className="max-xl:hidden">{t("common.edit")}</span>
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => setConfirmTx(it)}
-                      disabled={editingId === it.id}
-                      title={t("common.delete")}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="max-xl:hidden">{t("common.delete")}</span>
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+      <div className="mt-6 rounded-xl border bg-muted/30 p-4 md:p-5">
+        <div className="mb-5 md:mb-6 flex flex-wrap items-end gap-2">
+          <div className="grid gap-1">
+            <Label htmlFor={accFilterId}>{t("transactions.filter.account")}</Label>
+            <AccountsMultiSelect
+              accounts={accountOptions}
+              value={accountFilter}
+              onChange={setAccountFilter}
+              triggerId={accFilterId}
+            />
           </div>
-        ))}
+
+          <div className="grid gap-1">
+            <Label htmlFor={dateFilterId}>{t("transactions.filter.period")}</Label>
+            <DateRangePicker value={dateRange} onChange={setDateRange} triggerId={dateFilterId} />
+          </div>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            disabled={!hasFilters}
+            onClick={resetFilters}
+          >
+            {t("filters.reset_filters")}
+          </Button>
+        </div>
+
+        <div className="grid gap-4">
+          {grouped.map(([day, arr]) => (
+            <div key={day} className="">
+              <div className="text-sm text-muted-foreground mb-1">{format(parseISO(day), "dd.MM.yyyy")}</div>
+              <div className="grid gap-2">
+                {arr.map((it) => (
+                  <div
+                    key={it.id}
+                    className="flex flex-col gap-3 rounded-md border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="space-y-1 flex sm:flex-1 sm:items-center gap-1 sm:gap-2 sm:space-y-0">
+                      {type === "expense" ? (
+                        <>
+                          {/* Account indicator (icon or truncated name) */}
+                          {accIcon(it.accountId) ? (
+                            <img
+                              src={accIcon(it.accountId)!}
+                              alt=""
+                              title={accName(it.accountId)}
+                              className="inline-block h-6 w-6 align-[-2px] object-contain"
+                            />
+                          ) : (
+                            <span
+                              title={accName(it.accountId)}
+                              className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                              style={{ color: accColor(it.accountId) || undefined }}
+                            >
+                              {accName(it.accountId)}
+                            </span>
+                          )}
+                          <span className="font-medium">{catName(it.categoryId)}</span>
+                          {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
+                        </>
+                      ) : type === "income" ? (
+                        <>
+                          {/* Account indicator (icon or truncated name) */}
+                          {accIcon(it.accountId) ? (
+                            <img
+                              src={accIcon(it.accountId)!}
+                              alt=""
+                              title={accName(it.accountId)}
+                              className="inline-block h-6 w-6 align-[-2px] object-contain"
+                            />
+                          ) : (
+                            <span
+                              title={accName(it.accountId)}
+                              className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                              style={{ color: accColor(it.accountId) || undefined }}
+                            >
+                              {accName(it.accountId)}
+                            </span>
+                          )}
+                          <span className="mx-1.5 text-muted-foreground">·</span>
+                          <span className="font-medium">{srcName(it.sourceId)}</span>
+                          {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
+                        </>
+                      ) : type === "transfer" ? (
+                        <>
+                          {accIcon(it.fromAccountId) ? (
+                            <img
+                              src={accIcon(it.fromAccountId)!}
+                              alt=""
+                              title={accName(it.fromAccountId)}
+                              className="inline-block h-6 w-6 align-[-2px] object-contain"
+                            />
+                          ) : (
+                            <span
+                              title={accName(it.fromAccountId)}
+                              className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                              style={{ color: accColor(it.fromAccountId) || undefined }}
+                            >
+                              {accName(it.fromAccountId)}
+                            </span>
+                          )}
+                          <span className="mx-1.5">→</span>
+                          {accIcon(it.toAccountId) ? (
+                            <img
+                              src={accIcon(it.toAccountId)!}
+                              alt=""
+                              title={accName(it.toAccountId)}
+                              className="inline-block h-6 w-6 align-[-2px] object-contain"
+                            />
+                          ) : (
+                            <span
+                              title={accName(it.toAccountId)}
+                              className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                              style={{ color: accColor(it.toAccountId) || undefined }}
+                            >
+                              {accName(it.toAccountId)}
+                            </span>
+                          )}
+                          {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
+                        </>
+                      ) : (
+                        <>
+                          {accIcon(it.accountId) ? (
+                            <img
+                              src={accIcon(it.accountId)!}
+                              alt=""
+                              title={accName(it.accountId)}
+                              className="inline-block h-6 w-6 align-[-2px] object-contain"
+                            />
+                          ) : (
+                            <span
+                              title={accName(it.accountId)}
+                              className="inline-block max-w-6 max-sm:max-w-full max-sm:order-1 sm:-mr-1 overflow-hidden text-ellipsis whitespace-nowrap font-medium"
+                              style={{ color: accColor(it.accountId) || undefined }}
+                            >
+                              {accName(it.accountId)}
+                            </span>
+                          )}
+                          {it.comment ? <span className="text-muted-foreground"> — {it.comment}</span> : null}
+                        </>
+                      )}
+                    </div>
+                    <div className="text-sm font-medium sm:text-right">
+                      {type === "exchange" ? (
+                        <>
+                          <span className="text-red-600 mr-2">-{formatMoneyAmount(Number(it.amountFrom))} {curName(it.fromCurrencyId)}</span>
+                          <span className="text-green-600">+{formatMoneyAmount(Number(it.amountTo))} {curName(it.toCurrencyId)}</span>
+                          {Number(it?.amountFrom) > 0 && Number(it?.amountTo) > 0 ? (
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              {(() => {
+                                const from = Number(it.amountFrom);
+                                const to = Number(it.amountTo);
+                                if (!(isFinite(from) && isFinite(to)) || from <= 0 || to <= 0) {
+                                  return null;
+                                }
+                                const direct = to / from; // 1 FROM = direct TO
+                                const invert = from / to;  // 1 TO = invert FROM
+                                const showFromIsBase = direct >= 1; // expensive -> cheap
+                                const baseCur = showFromIsBase ? it.fromCurrencyId : it.toCurrencyId;
+                                const quoteCur = showFromIsBase ? it.toCurrencyId : it.fromCurrencyId;
+                                const rate = showFromIsBase ? direct : invert;
+                                const rateStr = roundMoneyAmount(rate)
+                                console.log('rateStr', rateStr, rate);
+                                
+                                return `1 ${curName(baseCur)} = ${rateStr} ${curName(quoteCur)}`;
+                              })()}
+                            </div>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          <span className={Number(it.amount) >= 0 ? "text-foreground" : "text-red-600"}>{formatMoneyAmount(Number(it.amount))}</span>
+                          {it.currencyId ? <span className="text-muted-foreground ml-1">{curName(it.currencyId)}</span> : null}
+                        </>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 sm:justify-end">
+                      <Button
+                        variant="ghost"
+                        onClick={() => onEdit?.(it)}
+                        disabled={editingId === it.id}
+                        title={t("common.edit")}
+                      >
+                        <PenLine className="h-4 w-4" />
+                        <span className="max-xl:hidden">{t("common.edit")}</span>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => setConfirmTx(it)}
+                        disabled={editingId === it.id}
+                        title={t("common.delete")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="max-xl:hidden">{t("common.delete")}</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
       <AlertModal
         open={Boolean(confirmTx)}
         onOpenChange={(open) => {

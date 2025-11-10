@@ -191,11 +191,11 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
 
   return (
     <div className="grid gap-4" onKeyDownCapture={handleMetaEnterSubmit}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div className="grid gap-1">
+      <div className="flex gap-3 flex-wrap sm:items-end">
+        <div className="grid gap-1 max-sm:grow">
           <Label htmlFor={accSelId}>{t("nav.accounts")}</Label>
           <Select value={accountId} onValueChange={setAccountId}>
-            <SelectTrigger id={accSelId} className="font-semibold sm:w-56">
+            <SelectTrigger id={accSelId} className="font-semibold sm:w-64">
               <SelectValue placeholder={t("common.choose")} />
             </SelectTrigger>
             <SelectContent>
@@ -210,43 +210,39 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
             </SelectContent>
           </Select>
         </div>
-        <div className="grid gap-1 md:w-auto">
-          <Label htmlFor={dateId}>{t("common.date")}</Label>
-          <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
-        </div>
-      </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="grid gap-1">
-          <Label htmlFor={amountId}>{t("common.amount")}</Label>
-          <div className="relative">
-            <Input
-              id={amountId}
-              className={cn("w-full sm:w-56", amountPreview ? "pr-16" : undefined)}
-              type="text"
-              placeholder="0.0"
-              value={amount}
-              onChange={handleAmountChange}
-            />
-            {amountPreview ? (
-              <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
-                {amountPreview}
-              </span>
-            ) : null}
+        <div className="flex gap-3 grow">
+          <div className="grid gap-1 grow">
+            <Label htmlFor={amountId}>{t("common.amount")}</Label>
+            <div className="relative">
+              <Input
+                id={amountId}
+                className={cn("w-full", amountPreview ? "pr-16" : undefined)}
+                type="text"
+                placeholder="0.0"
+                value={amount}
+                onChange={handleAmountChange}
+              />
+              {amountPreview ? (
+                <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground">
+                  {amountPreview}
+                </span>
+              ) : null}
+            </div>
           </div>
-        </div>
-        <div className="grid gap-1 sm:w-44">
-          <Label htmlFor={currencySelId}>{t("common.currency")}</Label>
-          <Select value={currencyId} onValueChange={setCurrencyId}>
-            <SelectTrigger id={currencySelId} className="w-full">
-              <SelectValue placeholder={t("common.choose")} />
-            </SelectTrigger>
-            <SelectContent>
-              {currencies.map((c) => (
-                <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid gap-1 w-26 sm:w-44">
+            <Label htmlFor={currencySelId}>{t("common.currency")}</Label>
+            <Select value={currencyId} onValueChange={setCurrencyId}>
+              <SelectTrigger id={currencySelId} className="w-full">
+                <SelectValue placeholder={t("common.choose")} />
+              </SelectTrigger>
+              <SelectContent>
+                {currencies.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{currencyName(c.id)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -274,7 +270,11 @@ export function IncomeForm({ accounts, sources, currencies, editingTx, onDone }:
 
       {error ? <Alert>{error}</Alert> : null}
 
-      <div className="flex justify-end gap-2 pt-1">
+      <div className="flex justify-between items-end gap-2 pt-1">
+        <div className="grid gap-1 md:w-auto">
+          <Label htmlFor={dateId}>{t("common.date")}</Label>
+          <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
+        </div>
         {editingTx ? (
           <Button variant="ghost" onClick={() => onDone?.()}>{t("common.cancel")}</Button>
         ) : null}
