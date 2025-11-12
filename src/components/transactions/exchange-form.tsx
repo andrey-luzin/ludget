@@ -283,7 +283,7 @@ export function ExchangeForm({ accounts, currencies, editingTx, onDone }: { acco
       {error ? <Alert>{error}</Alert> : null}
 
       <div className="flex justify-between items-end gap-2 pt-1">
-        <div className="grid gap-1 md:w-auto">
+        <div className="grid gap-1 md:w-auto mr-auto">
           <Label htmlFor={dateId}>{t("common.date")}</Label>
           <DatePicker value={date} onChange={setDate} triggerId={dateId} triggerClassName="w-full sm:w-auto" />
         </div>
